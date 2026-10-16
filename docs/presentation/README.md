@@ -3,7 +3,7 @@
 | File | Event |
 |---|---|
 | [Vanitra_SCS_Mini_Project.pptx](Vanitra_SCS_Mini_Project.pptx) | SCS mini project review, AY 2025-26 (13 slides) |
-| [Mtx.Vanitra_Hackanova_5.0_Hardware.pdf](Mtx.Vanitra_Hackanova_5.0_Hardware.pdf) | Hackanova 5.0, hardware track — team **Mtx.Vanitra** (Manas Pednekar, Amey Satale) |
+| [Mtx.Vanitra_Hackanova_5.0_Hardware.pdf](Mtx.Vanitra_Hackanova_5.0_Hardware.pdf) | Hackanova 5.0, hardware track — team **Mtx.Vanitra** |
 
 Before the next presentation:
 - SCS deck **slide 6** still has the template's "Road map of operation management" text (Define / Analysis / Improvement / Control) — replace it with `docs/wiring/system_overview.png`.

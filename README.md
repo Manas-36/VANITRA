@@ -120,12 +120,9 @@ The SCS blue book (2025) reports **90–94 %** gesture accuracy on the trained s
 FSR pressure sensors on the fingertips · Indian Sign Language (ISL) vocabulary · temporal models (1D-CNN / GRU) for continuous signing · an ESP-NOW link so the wristband confirms what the glove said · haptic patterns beyond Morse (syllable / icon codes) and guided Morse training · Hindi and Marathi phrases · custom PCB, sweat-proof enclosure and low-power modes.
 
 ## Team
-| Name | Roll no. | Role |
+| Name | Roll no. | GitHub |
 |---|---|---|
-| Manas Pednekar | 36 | Team lead · [@Manas-36](https://github.com/Manas-36) |
-| Pragati Jha | 16 | SCS mini project |
-| Shubham Chamedia | 02 | SCS mini project |
-| Amey Satale | — | Hackanova 5.0 team Mtx.Vanitra · [@Ameyty](https://github.com/Ameyty) |
+| Manas Pednekar | 36 | [@Manas-36](https://github.com/Manas-36) |
 
 Guide: **Dr. Archana Belge**, Head of Department, Mechanical and Mechatronics Engineering · Full credits: [CONTRIBUTORS.md](CONTRIBUTORS.md)
 
