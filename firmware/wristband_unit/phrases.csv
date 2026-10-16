@@ -1,0 +1,23 @@
+name,morse,display,phrases
+HELLO,HI,Hello!,hello|hi there|good morning
+HOW_ARE_YOU,HRU,How are you?,how are you|how are you doing
+NAME,NAME?,What is your name?,what is your name|tell me your name
+THANKS,TY,Thank you,thank you|thanks a lot
+YES,Y,Yes,yes|yes please
+NO,N,No,no|no thank you
+WAIT,WAIT,Please wait,please wait|wait a minute|one moment
+COME,COME,Come with me,come here|come with me|follow me
+STOP,STOP,Stop,stop|stop there
+OK_Q,OK?,Are you okay?,are you okay|are you all right
+HELP_Q,HELP?,Do you need help?,do you need help|can I help you
+SIT,SIT,Please sit down,please sit down|have a seat
+WATER_Q,WATER?,Do you want water?,do you want water|would you like some water
+FOOD_Q,FOOD?,Do you want food?,are you hungry|do you want food
+WHERE_Q,WHERE?,Where are you going?,where are you going|where do you want to go
+DOCTOR,DOC,Doctor is coming,the doctor is coming|calling the doctor
+REPEAT,RPT,Please repeat,please repeat|say that again
+UNDERSTAND,OK,I understand,I understand|got it
+SORRY,SRY,Sorry,sorry|I am sorry
+GO,GO,Let's go,let's go|time to go
+BYE,BYE,Goodbye,goodbye|bye bye|see you later
+DANGER,*ALERT,DANGER! Watch out,watch out|danger|be careful

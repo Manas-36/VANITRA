@@ -1,0 +1,346 @@
+{
+  "version": 1,
+  "author": "Vanitra team",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "flex1",
+      "top": -260,
+      "left": -420,
+      "rotate": 0,
+      "attrs": {
+        "travelLength": "30",
+        "label": "flex thumb"
+      }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "flex2",
+      "top": -205,
+      "left": -420,
+      "rotate": 0,
+      "attrs": {
+        "travelLength": "30",
+        "label": "flex index"
+      }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "flex3",
+      "top": -150,
+      "left": -420,
+      "rotate": 0,
+      "attrs": {
+        "travelLength": "30",
+        "label": "flex middle"
+      }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "flex4",
+      "top": -95,
+      "left": -420,
+      "rotate": 0,
+      "attrs": {
+        "travelLength": "30",
+        "label": "flex ring"
+      }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "flex5",
+      "top": -40,
+      "left": -420,
+      "rotate": 0,
+      "attrs": {
+        "travelLength": "30",
+        "label": "flex little"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "hall1",
+      "top": 40,
+      "left": -330,
+      "attrs": {
+        "label": "Hall H1 (middle = no magnet)"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "hall2",
+      "top": 130,
+      "left": -330,
+      "attrs": {
+        "label": "Hall H2 (middle = no magnet)"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "hall3",
+      "top": 220,
+      "left": -330,
+      "attrs": {
+        "label": "Hall H3 (middle = no magnet)"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "hall4",
+      "top": 310,
+      "left": -330,
+      "attrs": {
+        "label": "Hall H4 (middle = no magnet)"
+      }
+    },
+    {
+      "type": "wokwi-mpu6050",
+      "id": "imu",
+      "top": -150,
+      "left": 250,
+      "attrs": {}
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled",
+      "top": 40,
+      "left": 260,
+      "attrs": {
+        "i2cAddress": "0x3c"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "flex1:SIG",
+      "esp:4",
+      "green",
+      []
+    ],
+    [
+      "flex1:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "flex1:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "flex2:SIG",
+      "esp:5",
+      "green",
+      []
+    ],
+    [
+      "flex2:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "flex2:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "flex3:SIG",
+      "esp:6",
+      "green",
+      []
+    ],
+    [
+      "flex3:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "flex3:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "flex4:SIG",
+      "esp:7",
+      "green",
+      []
+    ],
+    [
+      "flex4:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "flex4:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "flex5:SIG",
+      "esp:8",
+      "green",
+      []
+    ],
+    [
+      "flex5:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "flex5:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "hall1:SIG",
+      "esp:9",
+      "violet",
+      []
+    ],
+    [
+      "hall1:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "hall1:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "hall2:SIG",
+      "esp:10",
+      "violet",
+      []
+    ],
+    [
+      "hall2:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "hall2:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "hall3:SIG",
+      "esp:1",
+      "violet",
+      []
+    ],
+    [
+      "hall3:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "hall3:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "hall4:SIG",
+      "esp:2",
+      "violet",
+      []
+    ],
+    [
+      "hall4:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "hall4:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "imu:SDA",
+      "esp:16",
+      "blue",
+      []
+    ],
+    [
+      "imu:SCL",
+      "esp:17",
+      "green",
+      []
+    ],
+    [
+      "imu:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "imu:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "oled:SDA",
+      "esp:16",
+      "blue",
+      []
+    ],
+    [
+      "oled:SCL",
+      "esp:17",
+      "green",
+      []
+    ],
+    [
+      "oled:VCC",
+      "esp:3V3.1",
+      "red",
+      []
+    ],
+    [
+      "oled:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

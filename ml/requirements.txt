@@ -1,0 +1,5 @@
+numpy
+scikit-learn
+matplotlib
+pyserial
+# voice clips: install espeak-ng (system package) or ffmpeg for your own recordings

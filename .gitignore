@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# generated / regenerable
+ml/data_synthetic/
+ml/reports/
+firmware/tests/host/test_glove
+firmware/tests/host/test_morse
+firmware/**/build/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/

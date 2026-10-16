@@ -1,0 +1,5 @@
+# Wokwi for VS Code: compile firmware/glove_unit with arduino-cli --output-dir build, then press F1 > "Wokwi: Start Simulator".
+[wokwi]
+version = 1
+firmware = "../../glove_unit/build/glove_unit.ino.merged.bin"
+elf = "../../glove_unit/build/glove_unit.ino.elf"
