@@ -102,6 +102,25 @@ class Sheet:
                       f'<polygon points="{mid+22},{y-14} {mid+12},{y-12} {mid+18},{y-5}" fill="{INK}"/>')
         self.text(mid, y - 16, label, 11.5, INK, "middle", 700)
 
+    def cap(self, x, y, length, label, net="GND", top="ANA"):
+        """Capacitor, vertical, from (x, y) down to (x, y + length)."""
+        c = INK
+        y1 = y + length / 2 - 4
+        self.wire([(x, y), (x, y1)], top, 2)
+        self.o.append(f'<line x1="{x-11}" y1="{y1}" x2="{x+11}" y2="{y1}" stroke="{c}" stroke-width="2.6"/>'
+                      f'<line x1="{x-11}" y1="{y1+8}" x2="{x+11}" y2="{y1+8}" stroke="{c}" stroke-width="2.6"/>')
+        self.wire([(x, y1 + 8), (x, y + length)], net, 2)
+        self.text(x + 14, y1 + 9, label, 11, INK, "start", 700)
+        return (x, y + length)
+
+    def connector(self, x, y, h, name, pins, below=False):
+        """Harness connector drawn as a band that the wires pass through."""
+        self.o.append(f'<rect x="{x}" y="{y}" width="30" height="{h}" rx="4" fill="#fff4e0" stroke="#c77700" '
+                      f'stroke-width="2" stroke-dasharray="6 4"/>')
+        ly = y + h + 18 if below else y - 22
+        self.text(x + 15, ly, name, 13, "#c77700", "middle", 700)
+        self.text(x + 15, ly + 15, pins, 10.5, "#c77700", "middle", 600)
+
     def speaker(self, x, y):
         self.o.append(f'<rect x="{x}" y="{y-14}" width="14" height="28" fill="#fff" stroke="{INK}" stroke-width="2"/>'
                       f'<polygon points="{x+14},{y-14} {x+36},{y-32} {x+36},{y+32} {x+14},{y+14}" fill="#fff" stroke="{INK}" stroke-width="2"/>'
@@ -214,81 +233,141 @@ def power_block(s, x, y, board_name, extra=""):
     s.text(x, y + 143, "Never plug USB and the 5V boost in at the same time without a diode.", 12, MUTED, italic=True)
 
 
-# ===================================================================== glove
+# ===================================================================== glove (hardware v2)
+def power_block_v2(s, x, y):
+    """Glove v2: LiPo -> TP4056 -> switch -> VSYS -> low-dropout 3.3 V LDO -> board 3V3. No boost converter."""
+    s.text(x, y - 14, "POWER v2  (no boost converter: quieter sensor rail, fewer parts)", 13, ACCENT, weight=700)
+    s.box(x, y, 150, 70, "LiPo 3.7 V", "1S, 1000 mAh")
+    s.box(x + 200, y, 170, 70, "TP4056 + DW01", "USB-C charger + protection")
+    s.box(x + 430, y, 120, 70, "Switch", "slide SPDT")
+    s.box(x + 700, y, 190, 70, "AP2112K-3.3 LDO", "or ME6211C33 · 600 mA")
+    s.wire([(x + 150, y + 25), (x + 200, y + 25)], "VBAT")
+    s.text(x + 175, y + 18, "B+", 11, NET["VBAT"], "middle", 700)
+    s.wire([(x + 150, y + 50), (x + 200, y + 50)], "GND")
+    s.wire([(x + 370, y + 25), (x + 430, y + 25)], "VBAT")
+    s.text(x + 400, y + 18, "OUT+", 11, NET["VBAT"], "middle", 700)
+    s.wire([(x + 370, y + 50), (x + 380, y + 50), (x + 380, y + 100)], "GND")
+    s.gnd(x + 380, y + 100)
+    # VSYS node after the switch
+    s.wire([(x + 550, y + 25), (x + 700, y + 25)], "VBAT")
+    s.dot(x + 600, y + 25, "VBAT")
+    s.wire([(x + 600, y + 25), (x + 600, y - 34)], "VBAT")
+    s.tag(x + 600, y - 34, "VSYS -> amp VIN", "VBAT")
+    s.dot(x + 650, y + 25, "VBAT")
+    s.cap(x + 650, y + 25, 60, "10µ", top="VBAT")
+    s.gnd(x + 650, y + 85)
+    # LDO out -> 3V3
+    s.wire([(x + 890, y + 25), (x + 960, y + 25)], "3V3")
+    s.dot(x + 930, y + 25, "3V3")
+    s.cap(x + 930, y + 25, 60, "10µ", top="3V3")
+    s.gnd(x + 930, y + 85)
+    s.tag(x + 960, y + 25, "3V3 -> board 3V3 pin", "3V3")
+    s.wire([(x + 795, y + 70), (x + 795, y + 95)], "GND")
+    s.gnd(x + 795, y + 95)
+    s.text(x + 808, y + 92, "EN tied to VIN", 10.5, MUTED)
+    # battery divider AFTER the switch (no drain when off)
+    s.wire([(x + 600, y + 25), (x + 600, y + 140), (x + 610, y + 140)], "VBAT")
+    end = s.resistor(x + 610, y + 140, 100, False, "100k", "VBAT")
+    s.dot(end[0], end[1], "VBAT")
+    s.wire([end, (end[0] + 90, end[1])], "ANA")
+    s.tag(end[0] + 90, end[1], "VBAT/2", "ANA")
+    s.resistor(end[0], end[1], 60, True, "100k", "GND")
+    s.gnd(end[0], end[1] + 60)
+    s.dot(end[0] + 60, end[1], "ANA")
+    s.cap(end[0] + 60, end[1], 60, "100n")
+    s.gnd(end[0] + 60, end[1] + 60)
+    s.text(x, y + 150, "VSYS = battery after the switch (3.4–4.2 V): feeds the MAX98357A and the", 12, MUTED)
+    s.text(x, y + 168, "battery divider. The board's 5V pin stays free (USB only).", 12, MUTED)
+    s.text(x, y + 186, "Switch the battery OFF while USB is plugged in.", 12, MUTED, italic=True)
+
+
 def glove():
-    s = Sheet(1900, 1390, "Vanitra glove unit — wiring schematic",
-              "ESP32-S3-DevKitC-1 N16R8 · 5 flex + 4 SS49E Hall (analog, ADC1) · MPU6050 + OLED on I2C · "
-              "MAX98357A I2S speaker amp · pins from firmware/glove_unit/config.h")
-    bx, by = 760, 150
+    s = Sheet(1900, 1520, "Vanitra glove unit v2 — wiring schematic",
+              "ESP32-S3-DevKitC-1 N16R8 · 5 flex (4.5\" fingers, 2.2\" thumb) + 4 SS49E Hall on ADC1, 100 nF on every "
+              "analog input · plug-in glove harness · MPU6050 + OLED on I2C · MAX98357A · LDO power · "
+              "pins from firmware/glove_unit/config.h")
+    bx, by = 820, 150
     fl_y = [140, 210, 280, 350, 420]
-    ha_y = [520, 590, 660, 730]
-    P = board(s, bx, by, 320, 900, "ESP32-S3-DevKitC-1", "N16R8 · glove (worn on the wrist)",
+    ha_y = [550, 620, 690, 760]
+    P = board(s, bx, by, 320, 900, "ESP32-S3-DevKitC-1", "N16R8 · on the wrist cuff",
               left=[(60, "3V3")] + [(d, f"GPIO{g}") for d, g in zip(fl_y, [4, 5, 6, 7, 8])]
                    + [(d, f"GPIO{g}") for d, g in zip(ha_y, [9, 10, 1, 2])] + [(810, "GPIO3"), (860, "GND")],
-              right=[(60, "5V"), (150, "GPIO16  SDA"), (200, "GPIO17  SCL"), (420, "GPIO12  BCLK"),
+              right=[(95, "5V  (leave free)"), (150, "GPIO16  SDA"), (200, "GPIO17  SCL"), (420, "GPIO12  BCLK"),
                      (470, "GPIO13  LRC"), (520, "GPIO14  DOUT"), (570, "GPIO21  AMP SD"),
                      (720, "GPIO0  BOOT btn (on board)"), (770, "GPIO48  RGB LED (on board)"), (860, "GND ")])
 
-    # 3V3 rail on the far left
-    rail_x = 110
-    x3, y3 = P["3V3"]
-    s.wire([(x3, y3), (rail_x, y3), (rail_x, by + ha_y[-1] + 10)], "3V3", 3)
-    s.vcc(rail_x, y3)
+    s.text(150, 118, "GLOVE  (washable, unplugs at J1/J2)", 12.5, "#c77700", weight=700)
+    s.text(470, 118, "WRIST CUFF  (perfboard / PCB)", 12.5, "#c77700", weight=700)
 
-    s.text(150, by + 105, "FLEX SENSORS  (2.2\" / 4.5\" Spectra-type)  3V3 -> flex -> pin -> 47 kΩ -> GND", 12.5, ACCENT, weight=700)
-    fingers = ["thumb", "index", "middle", "ring", "little"]
-    for (dy, g, name) in zip(fl_y, [4, 5, 6, 7, 8], fingers):
+    # 3V3 rail on the far left, fed from the LDO through the board's 3V3 pin
+    rail_x = 90
+    x3, y3 = P["3V3"]
+    s.wire([(x3, y3), (rail_x, y3), (rail_x, by + ha_y[-1] - 10)], "3V3", 3)
+    s.vcc(rail_x, y3)
+    s.dot(760, y3, "3V3")
+    s.wire([(760, y3), (760, y3 - 30)], "3V3")
+    s.tag(760, y3 - 30, "3V3 from LDO", "3V3", side="l")
+
+    s.connector(330, by + 40, 410, "J1", "JST-PH 6p: 3V3 F1-F5")
+    s.text(380, by + 100, "FLEX DIVIDERS: R + 100 nF to GND", 12.5, ACCENT, weight=700)
+    fingers = [("thumb 2.2\"", "33k"), ("index 4.5\"", "22k"), ("middle 4.5\"", "22k"), ("ring 4.5\"", "22k"), ("little 4.5\"", "22k")]
+    for (dy, g, (name, rv)) in zip(fl_y, [4, 5, 6, 7, 8], fingers):
         y = by + dy
         s.dot(rail_x, y, "3V3")
-        s.flex(rail_x, y, 230, f"Flex {name}")
-        node = (440, y)
-        s.wire([(rail_x + 230, y), node, P[f"GPIO{g}"]], "ANA")
+        s.flex(rail_x, y, 200, f"Flex {name}")
+        node, cnode = (520, y), (600, y)
+        s.wire([(rail_x + 200, y), node, cnode, P[f"GPIO{g}"]], "ANA")
+        s.o.append(f'<rect x="341" y="{y-4}" width="8" height="8" fill="#fff" stroke="#c77700" stroke-width="1.5"/>')
         s.dot(*node, "ANA")
-        s.resistor(node[0], y, 34, True, "47k", "GND")
+        s.resistor(node[0], y, 34, True, rv, "GND")
         s.gnd(node[0], y + 34)
+        s.dot(*cnode, "ANA")
+        s.cap(cnode[0], y, 34, "100n")
+        s.gnd(cnode[0], y + 34)
+    s.o.append(f'<rect x="341" y="{y3-4}" width="8" height="8" fill="#fff" stroke="#c77700" stroke-width="1.5"/>')
 
-    s.text(150, by + 488, "SS49E LINEAR HALL SENSORS  (magnets on fingertips)  OUT -> ADC", 12.5, ACCENT, weight=700)
+    s.connector(400, by + 515, 280, "J2", "JST-PH 6p: 3V3 GND H1-H4", below=True)
+    s.text(150, by + 494, "SS49E HALL  (magnets on fingertips):  OUT -> J2 -> 100 nF -> ADC", 12.5, ACCENT, weight=700)
     places = ["H1 thumb tip", "H2 thumb side", "H3 palm centre", "H4 index-middle"]
     for (dy, g, name) in zip(ha_y, [9, 10, 1, 2], places):
         y = by + dy
-        bx0 = 300
-        s.o.append(f'<rect x="{bx0}" y="{y-24}" width="170" height="48" rx="6" fill="{PANEL}" stroke="{INK}" stroke-width="2"/>')
-        s.text(bx0 + 85, y - 6, "SS49E", 13, INK, "middle", 700)
-        s.text(bx0 + 85, y + 12, name, 11, MUTED, "middle")
-        s.pin(bx0, y - 10, "VCC", "l")
-        s.pin(bx0, y + 12, "GND", "l")
-        s.pin(bx0 + 170, y, "OUT", "r")
+        hx = 190
+        s.o.append(f'<rect x="{hx}" y="{y-24}" width="160" height="48" rx="6" fill="{PANEL}" stroke="{INK}" stroke-width="2"/>')
+        s.text(hx + 80, y - 6, "SS49E", 13, INK, "middle", 700)
+        s.text(hx + 80, y + 12, name, 11, MUTED, "middle")
+        s.pin(hx, y - 10, "VCC", "l")
+        s.pin(hx, y + 12, "GND", "l")
+        s.pin(hx + 160, y, "OUT", "r")
         s.dot(rail_x, y - 10, "3V3")
-        s.wire([(rail_x, y - 10), (bx0 - 4, y - 10)], "3V3")
-        s.wire([(bx0 - 4, y + 12), (250, y + 12), (250, y + 22)], "GND")
-        s.gnd(250, y + 22)
-        s.wire([(bx0 + 174, y), P[f"GPIO{g}"]], "ANA")
+        s.wire([(rail_x, y - 10), (hx - 4, y - 10)], "3V3")
+        s.wire([(hx - 4, y + 12), (140, y + 12), (140, y + 22)], "GND")
+        s.gnd(140, y + 22)
+        s.wire([(hx + 164, y), P[f"GPIO{g}"]], "ANA")
+        s.o.append(f'<rect x="411" y="{y-4}" width="8" height="8" fill="#fff" stroke="#c77700" stroke-width="1.5"/>')
+        s.dot(640, y, "ANA")
+        s.cap(640, y, 34, "100n")
+        s.gnd(640, y + 34)
+    s.text(150, by + 850, "+ 100 nF across VCC-GND at each SS49E (on the glove, next to the sensor)", 11.5, MUTED)
 
     # battery sense + GND
     xg, yg = P["GPIO3"]
-    s.wire([(xg, yg), (640, yg)], "ANA")
-    s.tag(640, yg, "VBAT/2", "ANA", side="l")
+    s.wire([(xg, yg), (700, yg)], "ANA")
+    s.tag(700, yg, "VBAT/2", "ANA", side="l")
     xg, yg = P["GND"]
-    s.wire([(xg, yg), (700, yg), (700, yg + 16)], "GND")
-    s.gnd(700, yg + 16)
-
-    # 5V
-    x5, y5 = P["5V"]
-    s.wire([(x5, y5), (x5 + 40, y5)], "5V")
-    s.tag(x5 + 40, y5, "5V", "5V")
+    s.wire([(xg, yg), (760, yg), (760, yg + 16)], "GND")
+    s.gnd(760, yg + 16)
 
     # I2C bus
     sda, scl = P["GPIO16  SDA"], P["GPIO17  SCL"]
-    bus_x1, bus_x2 = 1180, 1205
+    bus_x1, bus_x2 = 1240, 1265
     s.wire([sda, (bus_x1, sda[1]), (bus_x1, 420)], "SDA", 3)
     s.wire([scl, (bus_x2, scl[1]), (bus_x2, 420)], "SCL", 3)
     for i, (t, sub, dash) in enumerate([("MPU6050 (GY-521)", "accel + gyro · 0x68 · back of hand", False),
                                          ("SSD1306 OLED 0.96\"", "128×64 · 0x3C · optional", True)]):
-        mx, my = 1290, 190 + i * 130
+        mx, my = 1350, 190 + i * 130
         s.box(mx, my, 300, 100, t, sub, dash=dash)
         for j, lab in enumerate(["VCC", "GND", "SCL", "SDA"]):
-            py = my + 58 + j * 11 if False else my + 30 + j * 18
-            s.pin(mx, py, lab, "l")
+            s.pin(mx, my + 30 + j * 18, lab, "l")
         s.wire([(mx - 4, my + 30), (mx - 40, my + 30)], "3V3", 2)
         s.vcc(mx - 40, my + 30)
         s.wire([(mx - 4, my + 48), (mx - 60, my + 48), (mx - 60, my + 60)], "GND", 2)
@@ -297,38 +376,45 @@ def glove():
         s.dot(bus_x2, my + 66, "SCL")
         s.wire([(mx - 4, my + 84), (bus_x1, my + 84)], "SDA", 2)
         s.dot(bus_x1, my + 84, "SDA")
-    s.text(1290, 470, "MPU6050 AD0 -> GND (address 0x68). GY-521 has its own pull-ups.", 11.5, MUTED)
+    s.text(1350, 470, "MPU6050 AD0 -> GND (0x68). Mount it on the cuff side of J3", 11.5, MUTED)
+    s.text(1350, 486, "(4-wire JST-SH) so the glove can be washed.", 11.5, MUTED)
 
-    # MAX98357A
-    ax, ay = 1290, 540
-    s.box(ax, ay, 300, 250, "MAX98357A", "I2S 3 W class-D amplifier")
+    # MAX98357A, now powered from VSYS
+    ax, ay = 1350, 540
+    s.box(ax, ay, 300, 250, "MAX98357A", "I2S class-D amp · VIN 2.5–5.5 V")
     labs = ["BCLK", "LRC", "DIN", "SD", "GAIN", "VIN", "GND"]
     for j, lab in enumerate(labs):
         s.pin(ax, ay + 70 + j * 26, lab, "l")
     for lab, py in (("GPIO12  BCLK", ay + 70), ("GPIO13  LRC", ay + 96), ("GPIO14  DOUT", ay + 122), ("GPIO21  AMP SD", ay + 148)):
         p = P[lab]
-        mid = 1150 + (py - ay) * 0.3
+        mid = 1200 + (py - ay) * 0.3
         s.wire([p, (mid, p[1]), (mid, py), (ax - 4, py)], "I2S")
     s.text(ax - 12, ay + 178, "open = 9 dB", 11, MUTED, "end")
-    s.wire([(ax - 4, ay + 200), (ax - 60, ay + 200)], "5V")
-    s.tag(ax - 60, ay + 200, "5V", "5V", side="l")
-    s.wire([(ax - 4, ay + 226), (ax - 30, ay + 226), (ax - 30, ay + 240)], "GND")
-    s.gnd(ax - 30, ay + 240)
+    s.wire([(ax - 4, ay + 200), (ax - 130, ay + 200)], "VBAT")
+    s.tag(ax - 130, ay + 200, "VSYS", "VBAT", side="l")
+    s.dot(ax - 100, ay + 200, "VBAT")
+    s.cap(ax - 100, ay + 200, 40, "100µ", top="VBAT")
+    s.gnd(ax - 100, ay + 240)
+    s.wire([(ax - 4, ay + 226), (ax - 20, ay + 226), (ax - 20, ay + 240)], "GND")
+    s.gnd(ax - 20, ay + 240)
     s.pin(ax + 300, ay + 100, "OUT+", "r")
     s.pin(ax + 300, ay + 160, "OUT−", "r")
     s.wire([(ax + 304, ay + 100), (ax + 350, ay + 100), (ax + 350, ay + 115)], "SIG")
     s.wire([(ax + 304, ay + 160), (ax + 350, ay + 160), (ax + 350, ay + 145)], "SIG")
     s.speaker(ax + 350, ay + 130)
     s.text(ax + 360, ay + 190, "speaker 4–8 Ω, 1–3 W", 11.5, MUTED)
-    s.text(ax + 360, ay + 206, "at the cuff, facing out", 11.5, MUTED)
+    s.text(ax + 360, ay + 206, "~0.8 W max at 3.7 V", 11.5, MUTED)
 
-    s.note(1290, 830, ["Notes",
-                       "• Only ADC1 pins are used for sensors (ADC2 is unreliable).",
-                       "• Run the flex/Hall wires along the fingers with strain relief.",
-                       "• Test each part first: firmware/tests/glove_sensor_monitor,",
-                       "  i2c_scan, speaker_test.  Then calibrate: hold BOOT 2 s."], w=520)
-    power_block(s, 150, 1150, "glove", " and MAX98357A VIN")
-    s.legend(1060, 1240, [("3V3", "3V3"), ("5V", "5V"), ("VBAT", "battery"), ("GND", "GND"), ("ANA", "analog"),
+    s.note(1350, 830, ["What changed from v1",
+                       "• Fingers use 4.5\" flex (covers both knuckles); divider R = √(Rflat·Rbent):",
+                       "  22k for 4.5\", 33k for the 2.2\" thumb (was 47k on all).",
+                       "• 100 nF on every analog pin: steadier ADC, no channel crosstalk.",
+                       "• Glove plugs into the cuff (J1 flex, J2 Hall, J3 IMU): washable, repairable.",
+                       "• MT3608 boost removed: battery -> LDO -> 3V3; amp runs from VSYS.",
+                       "• Battery divider moved after the switch (no drain when off).",
+                       "• Firmware flags a cracked flex (pin stuck at GND/3V3) and low battery."], w=520)
+    power_block_v2(s, 150, 1230)
+    s.legend(1060, 1490, [("3V3", "3V3"), ("VBAT", "battery / VSYS"), ("GND", "GND"), ("ANA", "analog"),
                           ("SDA", "SDA"), ("SCL", "SCL"), ("I2S", "I2S")])
     s.save("glove_unit")
 

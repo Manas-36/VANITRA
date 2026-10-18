@@ -2,4 +2,5 @@ numpy
 scikit-learn
 matplotlib
 pyserial
+# optional: pyttsx3   (live_decoder.py --speak)
 # voice clips: install espeak-ng (system package) or ffmpeg for your own recordings

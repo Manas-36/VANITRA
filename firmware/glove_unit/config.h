@@ -4,8 +4,12 @@
 #pragma once
 
 // ---------------------------------------------------------------- flex sensors (ADC1)
-// Each flex sensor: 3V3 -> flex -> pin -> 47 kOhm -> GND. Order: thumb, index, middle, ring, little.
+// Each flex sensor: 3V3 -> flex -> pin -> R -> GND, plus 100 nF from pin to GND (hardware v2).
+// v2: thumb 2.2" with R = 33k, index..little 4.5" with R = 22k. Rule: R = sqrt(R_flat * R_bent).
+// Order: thumb, index, middle, ring, little.
 static const int FLEX_PINS[5] = {4, 5, 6, 7, 8};          // ADC1_CH3..CH7
+#define FLEX_OPEN_MV      120   // below this the sensor or its wire is broken (pin pulled to GND)
+#define FLEX_SHORT_MV     3150  // above this the sensor is shorted (pin at 3V3)
 
 // ---------------------------------------------------------------- Hall sensors (ADC1)
 // SS49E linear Hall sensors, OUT read as analog. Magnets sit on the fingertips.
@@ -30,6 +34,14 @@ static const int HALL_PINS[4] = {9, 10, 1, 2};            // ADC1_CH8, CH9, CH0,
 #define BUTTON_PIN        0     // BOOT button: short = repeat last word, hold 2 s = calibrate
 #define VBAT_PIN          3     // battery via 100k/100k divider (ADC1_CH2)
 #define STATUS_LED        RGB_BUILTIN   // on-board WS2812 (GPIO48 on DevKitC-1 v1.0, GPIO38 on v1.1)
+
+#define VBAT_LOW_V        3.50f // v2 power runs the 3.3 V LDO straight from the cell: warn below this
+                                // (the LDO drops out and the sensor rail sags, which shifts calibration)
+
+// ---------------------------------------------------------------- gesture model
+#define GESTURE_MODEL_MLP 1     // v1: 0.5 s window, 16 hand-made features, MLP (model.h)
+#define GESTURE_MODEL_CNN 2     // v2: 1.0 s window, raw signal, temporal CNN (model_cnn.h)
+#define GESTURE_MODEL     GESTURE_MODEL_CNN
 
 // ---------------------------------------------------------------- recognition tuning
 #define SAMPLE_HZ         50    // sensor frame rate

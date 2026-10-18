@@ -100,7 +100,7 @@ def main(users=6, takes=3, seed=7):
         user_rng = np.random.default_rng(seed * 100 + u)
         for label in PROTO:
             for k in range(takes):
-                path = os.path.join(OUT, label, f"synthetic_u{u}_t{k}.csv")
+                path = os.path.join(OUT, label, f"synth{u}_t{k}.csv")
                 with open(path, "w", newline="") as f:
                     w = csv.writer(f)
                     w.writerow(COLUMNS)

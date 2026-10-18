@@ -41,14 +41,15 @@ Wire each part following [wiring.md](wiring.md), flash a test sketch from `firmw
    - LED blinks yellow: make a tight fist for 3 s.
    - LED turns green: saved. The calibration is kept in flash.
    Calibrate again whenever someone else wears the glove.
-3. The model shipped in `model.h` is a **placeholder trained on synthetic data**. Record real data and train before expecting correct words (next section).
+3. The models shipped in `model_cnn.h` (v2, default) and `model.h` (v1) are **placeholders trained on synthetic data**. Record real data and train before expecting correct words (next section).
 4. Serial commands: `h` help · `c` calibrate · `p` print live predictions · `i` info · `s` / `x` stream raw frames on / off.
 
 ## 5. Train the glove on real signs
 See [ml_pipeline.md](ml_pipeline.md). In short:
 ```bash
 python ml/collect_data.py --port COM5 --user manas      # each person, every sign, 5+ takes
-python ml/train.py                                       # writes firmware/glove_unit/model.h
+python ml/train_cnn.py --by-user                         # v2: writes firmware/glove_unit/model_cnn.h (+ CNN vs MLP report)
+python ml/train.py                                       # v1: writes firmware/glove_unit/model.h
 make -C firmware/tests/host                              # optional: PC parity test
 ```
 Then re-flash the glove.
@@ -78,4 +79,4 @@ and re-flash. Prefer phrases of 2–4 words; single short words ("yes", "no") ar
 | No sound | Run `speaker_test`. Check that the amp's SD pin is on GPIO21 (or tied to VIN) and that VIN is 5 V. |
 | Wristband: `SPEECH INIT FAILED` | PSRAM must be set to **OPI** and the partition must be **ESP SR 16M**. The board must be an N16R8. |
 | Wristband never hears the wake word | Run `mic_level_test`. Check L/R → GND and that the mic hole faces out. Speak 0.5–1 m away. |
-| Brown-out resets when the speaker or motor runs | Use the MT3608 at 5.0 V with a good LiPo. Add a 470 µF capacitor across 5V/GND near the amp. |
+| Brown-out resets when the speaker or motor runs | Glove v2: check the 100 µF at the amp VIN and the 10 µF at the LDO, and charge the battery (the LDO drops out below about 3.5 V). Wristband: MT3608 at 5.0 V with a good LiPo, plus 470 µF across 5V/GND. |
