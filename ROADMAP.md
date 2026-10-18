@@ -4,11 +4,11 @@
 
 **From the SCS mini project to a tested two-way wearable**
 
-![Done](https://img.shields.io/badge/done-14-2ea44f?style=for-the-badge)
+![Done](https://img.shields.io/badge/done-16-2ea44f?style=for-the-badge)
 ![To do](https://img.shields.io/badge/to_do-24-6e7781?style=for-the-badge)
 ![Phase](https://img.shields.io/badge/now-phase_3_bring--up-0e7c86?style=for-the-badge)
 
-`███████████░░░░░░░░░░░░░░░░░░░`  **14 / 38 tasks**
+`████████████░░░░░░░░░░░░░░░░░░`  **16 / 40 tasks**
 
 </div>
 
@@ -33,17 +33,17 @@
 - [x] Docs: setup, wiring, architecture, ML, test plan, decisions, report errata
 
 ## Phase 3 — Hardware bring-up 🔄 (next)
-- [ ] Buy parts from `hardware/bom.csv` (2× ESP32-S3 N16R8, SS49E, INMP441, MAX98357A …)
+- [ ] Buy parts from `hardware/bom.csv` (v2 glove: 4.5″ flex, LDO, JST connectors, 100 nF caps …)
 - [ ] Glove: sensors on the glove, pass `glove_sensor_monitor` (T1)
 - [ ] Glove: `i2c_scan`, `speaker_test`; flash `glove_unit`, calibrate
 - [ ] Wristband: `mic_level_test`, `haptic_test`; flash `wristband_unit`
-- [ ] Power: LiPo + TP4056 + MT3608 on both units, no brown-outs
+- [ ] Power: glove LiPo → LDO (v2), wristband LiPo → MT3608; no brown-outs while the speaker plays
 - [ ] Open the Wokwi diagram and fix any pin names that do not connect
 
 ## Phase 4 — Data + first real model
 - [ ] Decide vocabulary: keep the ASL-style 20 or switch to ISL (edit `ml/vocabulary.csv`)
 - [ ] Record ≥ 5 takes × 21 labels × 3 people (+ extra REST)
-- [ ] `train.py` and `train.py --by-user`; fix the most confused pairs
+- [ ] `train_cnn.py --by-user` (CNN vs MLP); ship the winner; fix the most confused pairs
 - [ ] Record human voice clips (`make_voice_clips.py --wav-dir`)
 - [ ] Tune `CONF_THRESHOLD`, `STABLE_COUNT` on the glove
 
@@ -64,4 +64,6 @@
 - [ ] FSR fingertip pressure sensors
 - [ ] Custom PCB for the glove cuff (start from `docs/images/pcb_layout_glove.png`)
 - [ ] Sweat-proof enclosure and strap; low-power sleep between signs
-- [ ] Hindi / Marathi phrases and voice; ISL dynamic signs with a 1D-CNN
+- [x] Temporal 1D-CNN gesture model + PC live decoder (v2.0-dev, placeholder until real data)
+- [x] Glove hardware v2 design: 4.5″ flex, ADC filtering, LDO power, plug-in harness ([review](docs/design_review_v2.md))
+- [ ] Hindi / Marathi phrases and voice; ISL dynamic signs (choose one-handed ISL subset first)

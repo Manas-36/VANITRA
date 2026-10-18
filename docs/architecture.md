@@ -23,7 +23,8 @@ stateDiagram-v2
 | Sensing | `sensors.h` | ADC1 at 12 bit with 11 dB attenuation, 4-sample average per channel. MPU6050 at ±4 g / ±500 °/s with a 44 Hz low-pass filter. |
 | Calibration | `sensors.h` | flex: (mV − straight) / (bent − straight), clamped to 0..1. Hall: \|mV − baseline\| with hysteresis 250/150 mV. Gyro bias removed. Stored with `Preferences` (NVS). |
 | Window + features | `features.h` | ring buffer of 25 frames (0.5 s) → 16 features (see [ml_pipeline.md](ml_pipeline.md)) |
-| Model | `mlp.h`, `model.h` | standardise → dense 32 ReLU → dense N → softmax |
+| Model (v2, default) | `classifier.h`, `cnn.h`, `model_cnn.h` | 1.0 s raw window → conv k5 24 → pool → conv k5 32 → pool → conv k3 32 → mean+max → dense → softmax |
+| Model (v1) | `mlp.h`, `model.h` | standardise → dense 32 ReLU → dense N → softmax |
 | Decision | `glove_unit.ino` | REST resets the state. A word must reach the confidence threshold and stay stable, with a repeat lockout and a 600 ms cooldown after speaking. |
 | Output | `voice.h`, `display.h` | 16 kHz WAV clip from flash → I2S → MAX98357A. The amp is shut down between words. Optional OLED. |
 

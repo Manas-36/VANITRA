@@ -14,3 +14,4 @@ firmware/**/build/
 .DS_Store
 Thumbs.db
 .vscode/
+firmware/tests/host/test_cnn

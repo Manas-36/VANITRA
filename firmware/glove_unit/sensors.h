@@ -17,6 +17,8 @@ struct Calibration {
 static Calibration cal;
 static bool hallState[4] = {false, false, false, false};
 static bool imuOk = false;
+static uint8_t flexFault = 0;           // bit i set = flex i reads open/short for > 0.5 s (v2)
+static uint8_t flexFaultCount[5] = {0};
 
 // ------------------------------------------------------------------ raw reads
 static float readMv(int pin, int n = 4) {
@@ -111,6 +113,10 @@ static void readFrame(vf::Sample &s, float *rawFlexMv = nullptr, float *rawHallM
   for (int i = 0; i < 5; i++) {
     float mv = readMv(FLEX_PINS[i]);
     if (rawFlexMv) rawFlexMv[i] = mv;
+    // v2: a cracked flex sensor or broken wire shows up as the pin stuck near GND or 3V3
+    bool bad = mv < FLEX_OPEN_MV || mv > FLEX_SHORT_MV;
+    if (!bad) { flexFaultCount[i] = 0; flexFault &= ~(1 << i); }
+    else if (flexFaultCount[i] < 255 && ++flexFaultCount[i] > 25) flexFault |= (1 << i);
     float span = cal.flexBent[i] - cal.flexStraight[i];
     float x = fabsf(span) < 50 ? 0 : (mv - cal.flexStraight[i]) / span;
     s.flex[i] = constrain(x, 0.f, 1.f);

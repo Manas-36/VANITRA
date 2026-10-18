@@ -1,6 +1,7 @@
 // =====================================================================================
 //  VANITRA — glove unit (gesture -> speech)
-//  5 flex + 4 Hall (SS49E) + MPU6050  ->  feature window  ->  on-device neural net  ->  voice clip
+//  5 flex + 4 Hall (SS49E) + MPU6050  ->  1.0 s window  ->  on-device temporal CNN (v2)  ->  voice clip
+//  (set GESTURE_MODEL in config.h to GESTURE_MODEL_MLP for the v1 feature MLP)
 //  Board: ESP32-S3-DevKitC-1 N16R8 · Arduino IDE, esp32 core 3.x · "ESP32S3 Dev Module"
 //  Tools: Flash 16MB, PSRAM OPI, Partition "16M Flash (3MB APP/9.9MB FATFS)", USB CDC On Boot: Enabled
 //  Libraries: Adafruit SSD1306 + Adafruit GFX (only if HAS_OLED 1)
@@ -10,12 +11,11 @@
 // =====================================================================================
 #include "config.h"
 #include "features.h"
-#include "mlp.h"
+#include "classifier.h"
 #include "sensors.h"
 #include "voice.h"
 #include "display.h"
 
-static vf::Window win;
 static bool streaming = false, printPred = false;
 static uint32_t frameNo = 0, nextFrameUs = 0;
 
@@ -56,7 +56,7 @@ static void runCalibration() {
   }
   for (int i = 0; i < 4; i++) Serial.printf("[cal] hall %d baseline %.0f mV\n", i + 1, cal.hallBase[i]);
   calSave();
-  win.clear();
+  clsClear();
   displayShow("CALIBRATION", ok ? "DONE" : "CHECK FLEX", ok ? "saved" : "see serial log");
   led(0, 40, 0); delay(600);
   ledIdle();
@@ -64,31 +64,61 @@ static void runCalibration() {
 
 // ------------------------------------------------------------------ speaking
 static void speak(int k, float p) {
-  Serial.printf("SAY,%s,%.2f\n", VM_LABELS[k], p);
+  Serial.printf("SAY,%s,%.2f\n", CLS_LABELS[k], p);
   char foot[24];
   snprintf(foot, sizeof foot, "conf %d%%", (int)(p * 100));
-  displayShow("VANITRA SAYS", VM_SAY[k], foot);
+  displayShow("VANITRA SAYS", CLS_SAY[k], foot);
   led(0, 30, 30);
-  voiceSay(VM_VOCAB_INDEX[k]);
+  voiceSay(CLS_VOCAB_INDEX[k]);
   ledIdle();
   lastSpoken = k;
   lastSpokenMs = millis();
   restSinceLast = false;
   cooldownUntil = millis() + SPEAK_COOLDOWN_MS;
   candidate = -1; candidateCount = 0;
-  win.clear();             // the speaking time is not part of the next gesture
+  clsClear();              // the speaking time is not part of the next gesture
 }
 
 // Confidence gate + stability (hysteresis) so the voice never flickers between words.
 static void onPrediction(int k, float p) {
-  if (printPred) Serial.printf("P,%s,%.2f\n", VM_LABELS[k], p);
-  if (k == VM_REST_INDEX) { restSinceLast = true; candidate = -1; candidateCount = 0; return; }
+  if (printPred) Serial.printf("P,%s,%.2f\n", CLS_LABELS[k], p);
+  if (k == CLS_REST_INDEX) { restSinceLast = true; candidate = -1; candidateCount = 0; return; }
   if (p < CONF_THRESHOLD || millis() < cooldownUntil) { candidateCount = 0; return; }
   if (k == candidate) candidateCount++;
   else { candidate = k; candidateCount = 1; }
   if (candidateCount < STABLE_COUNT) return;
   bool repeat = (k == lastSpoken) && !restSinceLast && (millis() - lastSpokenMs < REPEAT_GAP_MS);
   if (!repeat) speak(k, p);
+}
+
+// ------------------------------------------------------------------ health (v2)
+// Warn once when a flex sensor breaks or the battery is low, instead of silently guessing words.
+static void checkHealth() {
+  static uint8_t reported = 0;
+  static uint32_t lastBattCheck = 0;
+  static bool battWarned = false;
+  if (flexFault & ~reported) {
+    for (int i = 0; i < 5; i++)
+      if ((flexFault & ~reported) & (1 << i)) {
+        Serial.printf("[fault] flex %d reads open/short - check the sensor and its connector\n", i + 1);
+        char msg[16];
+        snprintf(msg, sizeof msg, "FLEX %d", i + 1);
+        displayShow("SENSOR FAULT", msg, "check connector");
+        voiceBeep(330, 200);
+      }
+    reported |= flexFault;
+  }
+  reported &= flexFault | 0xE0;          // forget repaired sensors so a new break is reported again
+  if (millis() - lastBattCheck > 10000) {
+    lastBattCheck = millis();
+    float v = batteryVolts();
+    if (v > 2.5f && v < VBAT_LOW_V && !battWarned) {   // > 2.5 V: ignore when running from USB only
+      battWarned = true;
+      Serial.printf("[power] battery low: %.2f V - charge soon\n", v);
+      displayShow("BATTERY LOW", "charge soon", "");
+      voiceBeep(440, 120); voiceBeep(330, 120);
+    } else if (v > VBAT_LOW_V + 0.1f) battWarned = false;
+  }
 }
 
 // ------------------------------------------------------------------ serial commands
@@ -98,7 +128,9 @@ static void printHelp() {
 }
 
 static void printInfo() {
-  Serial.printf("[info] model: %d inputs, %d hidden, %d classes (%s)\n", VM_N_IN, VM_N_HID, VM_N_OUT, VM_INFO);
+  Serial.printf("[info] model: %s, %d classes (%s)%s\n", CLS_NAME, CLS_N_OUT, CLS_INFO,
+                CLS_PLACEHOLDER ? " *** PLACEHOLDER - retrain on real data ***" : "");
+  Serial.printf("[info] flex faults: 0x%02X\n", flexFault);
   Serial.printf("[info] IMU %s, calibration %s, battery %.2f V\n", imuOk ? "ok" : "MISSING", cal.valid ? "saved" : "DEFAULT", batteryVolts());
   for (int i = 0; i < 5; i++) Serial.printf("[info] flex %d straight %.0f bent %.0f mV\n", i + 1, cal.flexStraight[i], cal.flexBent[i]);
   for (int i = 0; i < 4; i++) Serial.printf("[info] hall %d base %.0f mV\n", i + 1, cal.hallBase[i]);
@@ -157,8 +189,9 @@ void loop() {
 
   vf::Sample s;
   readFrame(s);
-  win.push(s);
+  clsPush(s);
   frameNo++;
+  checkHealth();
 
   if (streaming) {
     Serial.printf("D,%lu", (unsigned long)millis());
@@ -167,10 +200,9 @@ void loop() {
     Serial.printf(",%.3f,%.3f,%.3f,%.1f,%.1f,%.1f\n", s.ax, s.ay, s.az, s.gx, s.gy, s.gz);
   }
 
-  if (win.full() && frameNo % CLASSIFY_EVERY == 0) {
-    float f[vf::N_FEAT], probs[VM_N_OUT];
-    vf::computeFeatures(win, f);
-    int k = vf::mlpPredict(f, probs);
+  if (clsReady() && frameNo % CLASSIFY_EVERY == 0) {
+    float probs[CLS_N_OUT];
+    int k = clsPredict(probs);
     if (!streaming) onPrediction(k, probs[k]);
   }
 }
