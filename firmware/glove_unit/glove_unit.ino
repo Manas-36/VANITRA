@@ -6,8 +6,12 @@
 //  Tools: Flash 16MB, PSRAM OPI, Partition "16M Flash (3MB APP/9.9MB FATFS)", USB CDC On Boot: Enabled
 //  Libraries: Adafruit SSD1306 + Adafruit GFX (only if HAS_OLED 1)
 //
+//  Two gloves (v3): flash this SAME sketch on both; type 'r' on the left one to make it role LEFT.
+//  The LEFT glove only measures and radios its frames (ESP-NOW); the RIGHT glove runs the model on both
+//  hands, speaks, and streams both hands over USB.
+//
 //  Serial (115200): h help · c calibrate · s/x stream raw frames on/off (for ml/collect_data.py)
-//                   p predictions on/off · i info
+//                   p predictions on/off · i info · r toggle role RIGHT/LEFT (restarts)
 // =====================================================================================
 #include "config.h"
 #include "features.h"
@@ -15,6 +19,12 @@
 #include "sensors.h"
 #include "voice.h"
 #include "display.h"
+#include "glove_link.h"
+#include <Preferences.h>
+
+enum Role : uint8_t { ROLE_RIGHT = 0, ROLE_LEFT = 1 };
+static Role role = ROLE_RIGHT;
+static bool linkOk = false;
 
 static bool streaming = false, printPred = false;
 static uint32_t frameNo = 0, nextFrameUs = 0;
@@ -26,7 +36,29 @@ static uint32_t lastSpokenMs = 0, cooldownUntil = 0;
 
 // ------------------------------------------------------------------ status LED
 static void led(uint8_t r, uint8_t g, uint8_t b) { rgbLedWrite(STATUS_LED, r, g, b); }
-static void ledIdle() { if (streaming) led(12, 0, 12); else if (cal.valid) led(0, 10, 0); else led(14, 0, 0); }
+static void ledIdle() {
+  if (streaming) led(12, 0, 12);
+  else if (!cal.valid) led(14, 0, 0);
+  else if (role == ROLE_LEFT) led(0, 0, 14);          // LEFT glove: blue
+  else led(0, 10, 0);                                 // RIGHT glove: green
+}
+
+static void loadRole() {
+  Preferences p;
+  p.begin("vanitra", true);
+  role = (Role)p.getUChar("role", ROLE_RIGHT);
+  p.end();
+}
+
+static void toggleRole() {
+  Preferences p;
+  p.begin("vanitra", false);
+  p.putUChar("role", role == ROLE_RIGHT ? ROLE_LEFT : ROLE_RIGHT);
+  p.end();
+  Serial.println("[role] changed - restarting");
+  delay(200);
+  ESP.restart();
+}
 
 // ------------------------------------------------------------------ calibration
 static void countdown(const char *what, uint8_t r, uint8_t g, uint8_t b) {
@@ -124,13 +156,18 @@ static void checkHealth() {
 // ------------------------------------------------------------------ serial commands
 static void printHelp() {
   Serial.println(F("Vanitra glove — commands: h help | c calibrate | s stream on | x stream off | "
-                   "p predictions on/off | i info"));
+                   "p predictions on/off | i info | r role RIGHT/LEFT"));
 }
 
 static void printInfo() {
   Serial.printf("[info] model: %s, %d classes (%s)%s\n", CLS_NAME, CLS_N_OUT, CLS_INFO,
                 CLS_PLACEHOLDER ? " *** PLACEHOLDER - retrain on real data ***" : "");
   Serial.printf("[info] flex faults: 0x%02X\n", flexFault);
+  uint32_t rxN, lost, age;
+  glink::stats(rxN, lost, age);
+  Serial.printf("[info] role %s, link %s, left frames %lu (lost %lu, last %ld ms ago)\n",
+                role == ROLE_LEFT ? "LEFT (sender)" : "RIGHT (main)", linkOk ? "up" : "FAILED",
+                (unsigned long)rxN, (unsigned long)lost, age == 0xFFFFFFFF ? -1L : (long)age);
   Serial.printf("[info] IMU %s, calibration %s, battery %.2f V\n", imuOk ? "ok" : "MISSING", cal.valid ? "saved" : "DEFAULT", batteryVolts());
   for (int i = 0; i < 5; i++) Serial.printf("[info] flex %d straight %.0f bent %.0f mV\n", i + 1, cal.flexStraight[i], cal.flexBent[i]);
   for (int i = 0; i < 4; i++) Serial.printf("[info] hall %d base %.0f mV\n", i + 1, cal.hallBase[i]);
@@ -146,6 +183,7 @@ static void handleSerial() {
     case 'x': streaming = false; Serial.println("[stream] off"); ledIdle(); break;
     case 'p': printPred = !printPred; break;
     case 'i': printInfo(); break;
+    case 'r': toggleRole(); break;
     default: break;
   }
 }
@@ -163,17 +201,40 @@ static void handleButton() {
   wasDown = down;
 }
 
+// ------------------------------------------------------------------ USB stream (ml/collect_data.py)
+// One glove: D,t,15 values. Two gloves: D,t,15 right,15 left,left_ok (left = 0 when the link is down).
+static void printHand(const vf::Sample &s) {
+  for (int i = 0; i < 5; i++) Serial.printf(",%.4f", s.flex[i]);
+  for (int i = 0; i < 4; i++) Serial.printf(",%.0f", s.hall[i]);
+  Serial.printf(",%.3f,%.3f,%.3f,%.1f,%.1f,%.1f", s.ax, s.ay, s.az, s.gx, s.gy, s.gz);
+}
+
+static void printFrame(const vf::Sample &right, const vf::Sample *left, bool both) {
+  Serial.printf("D,%lu", (unsigned long)millis());
+  printHand(right);
+  if (both) {
+    vf::Sample zero = {};
+    printHand(left ? *left : zero);
+    Serial.printf(",%d", left ? 1 : 0);
+  }
+  Serial.print("\n");
+}
+
 // ------------------------------------------------------------------ setup / loop
 void setup() {
   Serial.begin(115200);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  loadRole();
   sensorsBegin();
   displayBegin();
   voiceBegin();
+  linkOk = glink::begin(role == ROLE_LEFT);
   led(0, 0, 30);
-  Serial.printf("\nVANITRA glove ready. IMU: %s. Calibration: %s.\n", imuOk ? "ok" : "MISSING", cal.valid ? "loaded" : "not done (hold BOOT 2 s)");
+  Serial.printf("\nVANITRA glove ready (%s). IMU: %s. Calibration: %s. Link: %s.\n",
+                role == ROLE_LEFT ? "LEFT - sender" : "RIGHT - main", imuOk ? "ok" : "MISSING",
+                cal.valid ? "loaded" : "not done (hold BOOT 2 s)", linkOk ? "up" : "FAILED");
   printHelp();
-  displayShow("VANITRA", "READY", cal.valid ? "glove unit" : "hold BOOT: calibrate");
+  displayShow("VANITRA", role == ROLE_LEFT ? "LEFT" : "READY", cal.valid ? "glove unit" : "hold BOOT: calibrate");
   voiceBeep(660, 80); voiceBeep(990, 80);
   ledIdle();
   nextFrameUs = micros();
@@ -189,16 +250,19 @@ void loop() {
 
   vf::Sample s;
   readFrame(s);
-  clsPush(s);
   frameNo++;
   checkHealth();
 
-  if (streaming) {
-    Serial.printf("D,%lu", (unsigned long)millis());
-    for (int i = 0; i < 5; i++) Serial.printf(",%.3f", s.flex[i]);
-    for (int i = 0; i < 4; i++) Serial.printf(",%.0f", s.hall[i]);
-    Serial.printf(",%.3f,%.3f,%.3f,%.1f,%.1f,%.1f\n", s.ax, s.ay, s.az, s.gx, s.gy, s.gz);
+  if (role == ROLE_LEFT) {                    // LEFT glove: measure, send, done
+    glink::send(s);
+    if (streaming) printFrame(s, nullptr, false);
+    return;
   }
+
+  vf::Sample left;
+  bool leftOk = glink::latest(left);
+  clsPush(s, leftOk ? &left : nullptr);
+  if (streaming) printFrame(s, leftOk ? &left : nullptr, TWO_GLOVES);
 
   if (clsReady() && frameNo % CLASSIFY_EVERY == 0) {
     float probs[CLS_N_OUT];

@@ -31,3 +31,18 @@ glove,Silicone wire 28-30 AWG multi-strand (2 m) + silicone sleeve for flex,1,12
 both,Slide switch SPDT,2,10,
 both,Resistor 100 kOhm (battery divider),4,1,two per unit
 both,Wires / perfboard / heat-shrink / JST connectors,1,300,
+left glove,ESP32-S3-DevKitC-1 N16R8 (16 MB flash / 8 MB PSRAM),1,950,any ESP32-S3 board with GPIO 1-10 free (PSRAM not needed)
+left glove,"Flex sensor 4.5 inch (Spectra-type, 10k flat)",4,945,"v2: index..little - covers both knuckles, tolerates the glove shifting"
+left glove,"Flex sensor 2.2 inch (Spectra-type, 25k flat)",1,450,v2: thumb only
+left glove,SS49E linear Hall sensor,4,15,analog output; runs on 3.3 V
+left glove,Neodymium disc magnet 5x2 mm,8,10,on fingertips; 4 spare
+left glove,MPU6050 (GY-521) accel + gyro,1,150,back of the hand
+left glove,Resistor 22 kOhm,4,1,v2 flex dividers (4.5 inch fingers)
+left glove,Resistor 33 kOhm,1,1,v2 flex divider (2.2 inch thumb)
+left glove,Capacitor 100 nF ceramic,14,2,v2: 9 analog inputs + 4 at the SS49E sensors + battery sense
+left glove,Fabric glove (full finger),1,250,flex sensors sewn / sleeved along the fingers
+left glove,AP2112K-3.3 or ME6211C33 LDO module (600 mA),1,60,v2: battery -> 3V3 pin; replaces the MT3608 on the glove
+left glove,Capacitor 10 uF ceramic + 100 uF electrolytic,3,5,v2: LDO in/out + MAX98357A VIN
+left glove,JST-PH 6-pin (x2) + JST-SH 4-pin (x1) pairs with leads,3,40,"v2: J1 flex, J2 Hall, J3 IMU - glove unplugs from the cuff"
+left glove,Silicone wire 28-30 AWG multi-strand (2 m) + silicone sleeve for flex,1,120,v2: flexible finger wiring; never solid-core on the fingers
+left glove,LiPo 3.7 V 1000 mAh + TP4056 + slide switch,1,400,ESP-NOW keeps the radio on: expect roughly 5-6 h (measure)

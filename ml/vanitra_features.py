@@ -8,6 +8,8 @@ import numpy as np
 N_FLEX, N_HALL, WIN, N_FEAT = 5, 4, 25, 16
 COLUMNS = (["t_ms"] + [f"flex{i+1}" for i in range(N_FLEX)] + [f"hall{i+1}" for i in range(N_HALL)]
            + ["ax", "ay", "az", "gx", "gy", "gz"])
+# two gloves: the right glove streams the left glove's frame too (received over ESP-NOW) + a link flag
+COLUMNS_2 = COLUMNS + ["L_" + c for c in COLUMNS[1:]] + ["left_ok"]
 FEATURE_NAMES = ([f"flex{i+1}_mean" for i in range(N_FLEX)] + [f"hall{i+1}_frac" for i in range(N_HALL)]
                  + ["roll_mean", "pitch_mean", "roll_delta", "pitch_delta",
                     "gyro_mean", "gyro_max", "accel_std"])

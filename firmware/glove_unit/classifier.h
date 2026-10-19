@@ -17,7 +17,19 @@
 #define CLS_PLACEHOLDER  VC_PLACEHOLDER
 #define CLS_NAME         "temporal CNN v2 (1.0 s window)"
 static vc::SeqWindow clsWin;
-static void clsPush(const vf::Sample &s) { clsWin.push(s); }
+// Channel layout = ml/vanitra_cnn.py CHANNELS_2: right glove 15, then (two-glove model) left glove 15.
+static void sampleToChannels(const vf::Sample &s, float *o) {
+  for (int i = 0; i < 5; i++) o[i] = s.flex[i];
+  for (int i = 0; i < 4; i++) o[5 + i] = s.hall[i];
+  o[9] = s.ax; o[10] = s.ay; o[11] = s.az;
+  o[12] = s.gx; o[13] = s.gy; o[14] = s.gz;
+}
+static void clsPush(const vf::Sample &right, const vf::Sample *left) {
+  float ch[VC_N_CH > 30 ? VC_N_CH : 30] = {0};
+  sampleToChannels(right, ch);
+  if (VC_N_CH >= 30 && left) sampleToChannels(*left, ch + 15);   // missing left glove stays 0
+  clsWin.push(ch);
+}
 static void clsClear() { clsWin.clear(); }
 static bool clsReady() { return clsWin.full(); }
 static int clsPredict(float *probs) { return vc::cnnPredict(clsWin, probs); }
@@ -32,7 +44,7 @@ static int clsPredict(float *probs) { return vc::cnnPredict(clsWin, probs); }
 #define CLS_PLACEHOLDER  VM_PLACEHOLDER
 #define CLS_NAME         "feature MLP v1 (0.5 s window)"
 static vf::Window clsWin;
-static void clsPush(const vf::Sample &s) { clsWin.push(s); }
+static void clsPush(const vf::Sample &right, const vf::Sample *) { clsWin.push(right); }   // right glove only
 static void clsClear() { clsWin.clear(); }
 static bool clsReady() { return clsWin.full(); }
 static int clsPredict(float *probs) {

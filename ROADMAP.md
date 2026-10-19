@@ -4,11 +4,11 @@
 
 **From the SCS mini project to a tested two-way wearable**
 
-![Done](https://img.shields.io/badge/done-16-2ea44f?style=for-the-badge)
-![To do](https://img.shields.io/badge/to_do-24-6e7781?style=for-the-badge)
+![Done](https://img.shields.io/badge/done-20-2ea44f?style=for-the-badge)
+![To do](https://img.shields.io/badge/to_do-28-6e7781?style=for-the-badge)
 ![Phase](https://img.shields.io/badge/now-phase_3_bring--up-0e7c86?style=for-the-badge)
 
-`████████████░░░░░░░░░░░░░░░░░░`  **16 / 40 tasks**
+`████████████░░░░░░░░░░░░░░░░░░`  **20 / 48 tasks**
 
 </div>
 
@@ -41,7 +41,7 @@
 - [ ] Open the Wokwi diagram and fix any pin names that do not connect
 
 ## Phase 4 — Data + first real model
-- [ ] Decide vocabulary: keep the ASL-style 20 or switch to ISL (edit `ml/vocabulary.csv`)
+- [x] Decide vocabulary: ISL glosses (v3)
 - [ ] Record ≥ 5 takes × 21 labels × 3 people (+ extra REST)
 - [ ] `train_cnn.py --by-user` (CNN vs MLP); ship the winner; fix the most confused pairs
 - [ ] Record human voice clips (`make_voice_clips.py --wav-dir`)
@@ -66,4 +66,12 @@
 - [ ] Sweat-proof enclosure and strap; low-power sleep between signs
 - [x] Temporal 1D-CNN gesture model + PC live decoder (v2.0-dev, placeholder until real data)
 - [x] Glove hardware v2 design: 4.5″ flex, ADC filtering, LDO power, plug-in harness ([review](docs/design_review_v2.md))
-- [ ] Hindi / Marathi phrases and voice; ISL dynamic signs (choose one-handed ISL subset first)
+- [x] ISL vocabulary + grammar engine (gloss LM + rules) — [isl_language.md](docs/isl_language.md)
+- [x] Two-glove firmware (ESP-NOW) + 30-channel model
+- [x] Phone-camera decoder on the laptop + glove/camera fusion — [camera_decoder.md](docs/camera_decoder.md)
+- [ ] Build the left glove; check link loss and battery life with both gloves
+- [ ] Record ISL data with Deaf signers (gloves + camera together) — [training_guide.md](docs/training_guide.md)
+- [ ] Pre-train the camera model on INCLUDE, fine-tune on our vocabulary, measure on held-out signers
+- [ ] Have a Deaf ISL signer check `lang/data/isl_corpus.txt` and the translations
+- [ ] Fingerspelling letters (FS_A…FS_Z) for names
+- [ ] Hindi / Marathi phrases and voice

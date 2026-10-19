@@ -3,10 +3,10 @@
 // unit-tested on a PC against the NumPy code (firmware/tests/host/test_cnn.cpp). Mirrors ml/vanitra_cnn.py:
 //   standardise -> conv k5 (15->24) ReLU pool2 -> conv k5 (24->32) ReLU pool2 -> conv k3 (32->32) ReLU
 //   -> [global mean | global max] -> dense -> softmax
-// ~0.23 M multiply-adds per call; a few ms on the ESP32-S3 at 240 MHz. ~16 KB of static RAM.
+// One glove: 15 input channels. Two gloves: 30 (right 15 + left 15, see classifier.h). ~0.25-0.3 M
+// multiply-adds per call; a few ms on the ESP32-S3 at 240 MHz. ~20 KB of static RAM.
 #pragma once
 #include <math.h>
-#include "features.h"    // vf::Sample
 #include "model_cnn.h"
 
 namespace vc {
@@ -16,27 +16,20 @@ constexpr int L1 = VC_POOL1 ? L0 / 2 : L0;
 constexpr int L2 = VC_POOL2 ? L1 / 2 : L1;
 constexpr int L3 = VC_POOL3 ? L2 / 2 : L2;
 
-// Ring buffer of the last L0 frames (1.0 s). at(0) = oldest.
+// Ring buffer of the last L0 frames (1.0 s), VC_N_CH channels each. at(0) = oldest.
+// Channel order = ml/vanitra_cnn.py CHANNELS_2 = the CSV columns streamed by the glove.
 struct SeqWindow {
-  vf::Sample buf[L0];
+  float buf[L0][VC_N_CH];
   int head = 0, count = 0;
-  void push(const vf::Sample &s) {
-    buf[head] = s;
+  void push(const float *ch) {
+    for (int c = 0; c < VC_N_CH; c++) buf[head][c] = ch[c];
     head = (head + 1) % L0;
     if (count < L0) count++;
   }
   bool full() const { return count == L0; }
-  const vf::Sample &at(int i) const { return buf[(head + i) % L0]; }
+  const float *at(int i) const { return buf[(head + i) % L0]; }
   void clear() { head = count = 0; }
 };
-
-// Channel order = ml/vanitra_cnn.py CHANNELS = the CSV columns streamed by the glove.
-inline void sampleToChannels(const vf::Sample &s, float *o) {
-  for (int i = 0; i < 5; i++) o[i] = s.flex[i];
-  for (int i = 0; i < 4; i++) o[5 + i] = s.hall[i];
-  o[9] = s.ax; o[10] = s.ay; o[11] = s.az;
-  o[12] = s.gx; o[13] = s.gy; o[14] = s.gz;
-}
 
 // 'same' zero-padded 1D convolution + ReLU. in [L][Cin], out [L][Cout], W[(j*Cin + c)*Cout + o].
 inline void convSameRelu(const float *in, int L, int Cin, const float *W, const float *b, int k, int Cout, float *out) {
@@ -77,8 +70,7 @@ inline int cnnPredict(const SeqWindow &w, float *probs) {
   static_assert(VC_C1 <= 64 && VC_C2 <= 64 && VC_C3 <= 64, "acc[] in convSameRelu holds 64 channels");
 
   for (int t = 0; t < L0; t++) {
-    float ch[VC_N_CH];
-    sampleToChannels(w.at(t), ch);
+    const float *ch = w.at(t);
     for (int c = 0; c < VC_N_CH; c++) a0[t * VC_N_CH + c] = (ch[c] - VC_MEAN[c]) / VC_STD[c];
   }
   convSameRelu(a0, L0, VC_N_CH, VC_W1, VC_B1, VC_K1, VC_C1, a1);

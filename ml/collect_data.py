@@ -8,6 +8,8 @@ Calibrate the glove first (hold BOOT 2 s). For each sign you are asked to perfor
 for --seconds; every take is saved to ml/data/<LABEL>/<user>_<time>.csv.
 Aim for >= 5 takes per sign per person, from at least 3 people, plus extra REST takes
 (hand relaxed, typing, scratching, walking) so the glove learns when NOT to speak.
+Two gloves: flash both, set the left one to role LEFT (serial 'r'), plug the RIGHT glove into USB.
+It streams both hands (31 columns: right 15, left 15, left_ok); check left_ok is 1 before recording.
 """
 import argparse
 import csv
@@ -15,7 +17,7 @@ import os
 import sys
 import time
 
-from vanitra_features import COLUMNS
+from vanitra_features import COLUMNS, COLUMNS_2
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,6 +28,7 @@ def load_labels():
 
 
 def record(ser, seconds):
+    """Returns rows of either COLUMNS (one glove) or COLUMNS_2 (two gloves)."""
     rows, t_end = [], time.time() + seconds
     ser.reset_input_buffer()
     while time.time() < t_end:
@@ -33,7 +36,7 @@ def record(ser, seconds):
         if not line.startswith("D,"):
             continue
         parts = line.split(",")[1:]
-        if len(parts) == len(COLUMNS):
+        if len(parts) in (len(COLUMNS), len(COLUMNS_2)):
             rows.append(parts)
     return rows
 
@@ -79,7 +82,7 @@ def main():
                 path = os.path.join(folder, f"{args.user}_{time.strftime('%Y%m%d_%H%M%S')}.csv")
                 with open(path, "w", newline="") as f:
                     w = csv.writer(f)
-                    w.writerow(COLUMNS)
+                    w.writerow(COLUMNS_2 if len(rows[0]) == len(COLUMNS_2) else COLUMNS)
                     w.writerows(rows)
                 print(f"    saved {len(rows)} frames -> {os.path.relpath(path, HERE)}")
     finally:

@@ -1,0 +1,9 @@
+numpy
+scikit-learn
+mediapipe>=0.10.14      # Tasks API: HandLandmarker, PoseLandmarker, FaceLandmarker
+opencv-python
+aiohttp                 # phone bridge (HTTPS + WebSocket)
+cryptography            # self-signed certificate for the phone bridge
+# optional:
+# pyttsx3               # --speak on the laptop
+# pyserial              # --glove fusion

@@ -9,15 +9,9 @@ int main() {
   int fails = 0;
   for (int t = 0; t < TVC_N; t++) {
     vc::SeqWindow w;
-    for (int k = 0; k < 7; k++) w.push(vf::Sample{});   // junk first: checks ring-buffer wrap-around
-    for (int k = 0; k < vc::L0; k++) {
-      const float *r = &TVC_FRAMES[(t * vc::L0 + k) * VC_N_CH];
-      vf::Sample s;
-      for (int i = 0; i < 5; i++) s.flex[i] = r[i];
-      for (int i = 0; i < 4; i++) s.hall[i] = r[5 + i];
-      s.ax = r[9]; s.ay = r[10]; s.az = r[11]; s.gx = r[12]; s.gy = r[13]; s.gz = r[14];
-      w.push(s);
-    }
+    float junk[VC_N_CH] = {0};
+    for (int k = 0; k < 7; k++) w.push(junk);           // junk first: checks ring-buffer wrap-around
+    for (int k = 0; k < vc::L0; k++) w.push(&TVC_FRAMES[(t * vc::L0 + k) * VC_N_CH]);
     float p[VC_N_OUT];
     int best = vc::cnnPredict(w, p);
     float err = 0;

@@ -15,3 +15,9 @@ firmware/**/build/
 Thumbs.db
 .vscode/
 firmware/tests/host/test_cnn
+
+# camera
+camera/.cert/
+camera/models/*.task
+camera/data_synthetic/
+camera/data_include/
