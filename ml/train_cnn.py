@@ -45,7 +45,7 @@ def train_cnn(takes, y_take, n_out, epochs=40, seed=0, verbose=False):
     class_w = np.where(counts > 0, counts.sum() / np.maximum(counts, 1) / n_out, 0.0)
     class_w = np.clip(class_w, 0.3, 3.0)
     per_take = [max(1, (len(f) - vc.SEQ_LEN) // 5 + 1) for f in frames]
-    p = vc.init_params(n_out, seed)
+    p = vc.init_params(n_out, seed, n_in=allf.shape[1])
     opt = vc.Adam(p, lr=2e-3)
     batch = 64
     for ep in range(epochs):
@@ -95,15 +95,16 @@ def export(p, mean, std, model_labels, vocab, info, placeholder):
     if placeholder:
         out += ["// *** PLACEHOLDER MODEL: trained on SYNTHETIC data (ml/make_synthetic_data.py). ***",
                 "// *** It only proves the pipeline. Record real takes and run: python ml/train_cnn.py ***"]
+    n_ch = len(mean)
     out += ["#pragma once",
             f"#define VC_SEQ_LEN {vc.SEQ_LEN}",
-            f"#define VC_N_CH {vc.N_CH}"]
+            f"#define VC_N_CH {n_ch}          // 15 = right glove only, 30 = right + left glove"]
     for i, (k, cout, pool) in enumerate(vc.LAYERS, 1):
         out += [f"#define VC_K{i} {k}", f"#define VC_C{i} {cout}", f"#define VC_POOL{i} {1 if pool else 0}"]
     n_out = p["bd"].shape[0]
     out += [f"#define VC_N_OUT {n_out}", f"#define VC_REST_INDEX {rest}",
             f'#define VC_INFO "{esc(info)}"', f"#define VC_PLACEHOLDER {1 if placeholder else 0}",
-            "// channel order: " + ", ".join(vc.CHANNELS),
+            "// channel order: " + ", ".join(vc.CHANNELS_2[:n_ch]),
             "// conv weights: W[(j*Cin + c)*Cout + o]  (tap j, input channel c, output o); dense: W[i*N_OUT + k]",
             c_array("VC_MEAN", mean), c_array("VC_STD", std)]
     for i in range(1, len(vc.LAYERS) + 1):
@@ -189,6 +190,8 @@ def main():
     ap.add_argument("--folds", type=int, default=5, help="0 = no cross-validation")
     ap.add_argument("--by-user", action="store_true")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--hands", type=int, choices=(1, 2), default=None,
+                    help="1 = right glove only, 2 = both gloves (default: whatever the data has)")
     args = ap.parse_args()
 
     data_dir = args.data or os.path.join(HERE, "data_synthetic" if args.synthetic else "data")
@@ -196,6 +199,10 @@ def main():
     takes = [t for t in load_takes(data_dir, [v[0] for v in vocab]) if len(t[3]) >= vc.SEQ_LEN]
     if not takes:
         sys.exit(f"no recordings of >= {vc.SEQ_LEN} frames in {data_dir}")
+    # one-glove takes (15 ch) and two-glove takes (30 ch, + left_ok) can be mixed: pad the left glove with zeros
+    n_ch = 15 * (args.hands or (2 if any(t[3].shape[1] >= 30 for t in takes) else 1))
+    takes = [(l, u, pth, np.pad(f[:, :n_ch], ((0, 0), (0, max(0, n_ch - f.shape[1]))))) for l, u, pth, f in takes]
+    print(f"input: {n_ch} channels ({'two gloves' if n_ch == 30 else 'right glove only'})")
     model_labels = [v[0] for v in vocab if any(t[0] == v[0] for t in takes)]
     if len(model_labels) < 3:
         sys.exit("need at least 3 labels with data")

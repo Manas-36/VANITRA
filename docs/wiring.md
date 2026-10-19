@@ -32,6 +32,9 @@ v2 changes are explained in the [design review](design_review_v2.md). The v1 dra
 
 **Placement on the glove:** flex sensors run along the back of each finger, with the printed side facing out. **Anchor only the pin end** at the knuckle and stiffen the pins (heat-shrink + a small stiffener). The strip slides in a sewn sleeve, with the tip free. Never glue it along its length. Use silicone multi-strand wire. Put **magnets on the fingertips** (index, middle, ring, little) and the **Hall sensors on the thumb tip, the thumb side, the palm centre and between the index and middle fingers**. The MPU6050 goes flat on the back of the hand. The ESP32, amplifier and battery go on the wrist cuff, with the speaker facing outwards.
 
+## Left glove (v3, two-glove mode)
+The left glove is the **same circuit as the glove above, without** the MAX98357A, speaker and OLED. It has the same pins, so `config.h` is unchanged. Flash the same `glove_unit` sketch, then type `r` in the serial monitor once. The LED turns **blue** (LEFT) and the right glove stays **green** (RIGHT). The left glove sends its frames over ESP-NOW (Wi-Fi channel `LINK_CHANNEL`, filtered by `LINK_PAIR_ID`). Type `i` on the right glove to see the link: frames received, frames lost, age of the last frame. Any ESP32-S3 board that brings out GPIO 1–10, 16, 17 works for the left glove; it does not need PSRAM.
+
 ## Wristband unit
 ![Wristband schematic](wiring/wristband_unit.svg)
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## v3.0-dev — 19 Oct 2026 · two gloves, ISL sentences, phone camera
+**Tested on PC with synthetic data only. Not yet run with hardware, a real phone camera or real signers.**
+- **ISL study** ([docs/isl_language.md](docs/isl_language.md)): sign parameters, two-handed sign types, grammar (time first, verb last, wh/NOT final, facial yes/no questions), what gloves vs camera can see.
+- **Two gloves:**
+  - the same firmware on both; role set over serial (`r`); `glove_link.h` (ESP-NOW, 36-byte frames at 50 Hz, link-loss fallback);
+  - 30-channel CNN with left-glove drop-out augmentation;
+  - the stream gains 31 columns; `collect_data.py` / `train_cnn.py` accept one- or two-glove takes.
+- **Vocabulary:** 58 ISL glosses + REST, shared by gloves and camera; voice clips regenerated (espeak).
+- **Language engine (`lang/vanitra_lang`):**
+  - lexicon (~100 glosses), phrase table, 79-sentence gloss corpus;
+  - interpolated bigram gloss LM with beam search over the n-best;
+  - rule-based ISL → English;
+  - fingerspelling merge; non-manual markers.
+  - Tests: all corpus sentences pass; on held-out noisy input, fully correct sentences rise from 67 % to 79 %.
+- **Phone-camera decoder (`camera/`):**
+  - HTTPS/WebSocket phone page (camera in, text and speech out);
+  - MediaPipe hands/pose/face → 148 mirror-invariant signing-space features;
+  - recorder; video-dataset extractor (INCLUDE) for transfer learning; trainer with held-out signer and fine-tuning;
+  - live decoder with sign spotter, LM and grammar; `eval_sentences.py` (gloss error rate, `--grid` tuning); glove + camera fusion.
+- `ml/live_decoder.py` now outputs English sentences.
+- [docs/training_guide.md](docs/training_guide.md): how to reach high precision (data protocol, transfer learning, personalisation, tuning, fusion, scaling up).
+- BOM: left glove added (≈ ₹15,800 total).
+
 ## v2.0-dev — 18 Oct 2026 · design review, glove hardware v2, temporal CNN
 **Software and drawings only. Not yet built with the ESP32 core or run on hardware.**
 - [Design review](docs/design_review_v2.md): 13 problems ranked; the flex-sensor question answered with a comparison of alternatives.

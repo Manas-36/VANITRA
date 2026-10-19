@@ -95,3 +95,8 @@ python ml/live_decoder.py --replay ml/data/HELLO/<take>.csv
 **Latency.** A sign is recognised once the 1.0 s window contains enough of it, plus `STABLE_COUNT` × 100 ms. Expect about 0.6–1.0 s from the start of a sign. That is slower to start than v1, but it sees the whole sign.
 
 **Synthetic data.** `python ml/make_synthetic_data.py && python ml/train_cnn.py --synthetic` builds a placeholder `model_cnn.h` (`VC_PLACEHOLDER 1`). It is a pipeline test only.
+
+## v3: two gloves and sentences
+- **Data:** with two gloves, plug the RIGHT glove into USB. Each streamed row has 31 values: right 15, left 15, `left_ok`. `collect_data.py` saves them as they come. One-glove and two-glove takes can be mixed: missing left channels are zero-padded.
+- **Model:** `train_cnn.py` detects 30 channels and exports `VC_N_CH 30`. Training randomly zeroes the left glove (10 %), so the model keeps working one-handed when the radio link drops. `--hands 1` trains a right-glove-only model from two-glove data. The v1 MLP always uses the right glove only.
+- **Sentences:** `live_decoder.py` passes every accepted sign, with its top-4 guesses, to `lang/vanitra_lang`. After `--sentence-gap` seconds of REST it prints the English sentence. On the glove itself, speech is still word by word (offline voice clips); full sentences need the laptop or phone.

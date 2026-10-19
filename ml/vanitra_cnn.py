@@ -3,8 +3,10 @@
 Pure NumPy (no PyTorch / TensorFlow), so it trains on any laptop and its maths can be mirrored
 line-for-line in C++ (firmware/glove_unit/cnn.h). Change both together.
 
-Input  : one window of SEQ_LEN calibrated frames x N_CH channels, oldest first
-         channels = flex1..5 (0 straight..1 bent), hall1..4 (0/1), ax, ay, az (g), gx, gy, gz (deg/s)
+Input  : one window of SEQ_LEN calibrated frames x n_in channels, oldest first
+         one glove  (15): flex1..5 (0 straight..1 bent), hall1..4 (0/1), ax, ay, az (g), gx, gy, gz (deg/s)
+         two gloves (30): the 15 right-glove channels, then the same 15 for the left glove (L_ prefix)
+         camera   (148): landmark features from camera/features.py (other layer sizes, same maths)
 Network: per-channel standardise
          conv1d k5  15->24  ReLU  maxpool 2      (50 -> 25 steps)
          conv1d k5  24->32  ReLU  maxpool 2      (25 -> 12 steps)
@@ -20,17 +22,20 @@ cannot see ORDER (bend-then-lift vs lift-then-bend) and only sees half a sign. T
 import numpy as np
 
 SEQ_LEN = 50          # 50 frames x 20 ms = 1.0 s
-N_CH = 15
-CHANNELS = ([f"flex{i+1}" for i in range(5)] + [f"hall{i+1}" for i in range(4)]
-            + ["ax", "ay", "az", "gx", "gy", "gz"])
-LAYERS = [(5, 24, True), (5, 32, True), (3, 32, False)]    # (kernel, out channels, maxpool after)
+HAND_CH = ([f"flex{i+1}" for i in range(5)] + [f"hall{i+1}" for i in range(4)]
+           + ["ax", "ay", "az", "gx", "gy", "gz"])
+N_CH = 15                                                    # one glove
+CHANNELS = HAND_CH
+CHANNELS_2 = HAND_CH + ["L_" + c for c in HAND_CH]           # two gloves (30)
+LAYERS = [(5, 24, True), (5, 32, True), (3, 32, False)]      # (kernel, out channels, maxpool after)
 
 
 # ----------------------------------------------------------------------------- init
-def init_params(n_out, seed=0):
+def init_params(n_out, seed=0, n_in=N_CH, layers=None):
+    layers = layers or LAYERS
     rng = np.random.default_rng(seed)
-    p, cin = {}, N_CH
-    for i, (k, cout, _pool) in enumerate(LAYERS, 1):
+    p, cin = {}, n_in
+    for i, (k, cout, _pool) in enumerate(layers, 1):
         fan_in = k * cin
         p[f"W{i}"] = (rng.standard_normal((fan_in, cout)) * np.sqrt(2.0 / fan_in)).astype(np.float64)
         p[f"b{i}"] = np.zeros(cout)
@@ -80,11 +85,12 @@ def _pool_bwd(dout, cache):
 
 
 # ----------------------------------------------------------------------------- forward / backward
-def forward(p, mean, std, x, train=False, drop=0.0, rng=None):
-    """x: (B, SEQ_LEN, N_CH) raw calibrated frames. Returns (probs, cache)."""
+def forward(p, mean, std, x, train=False, drop=0.0, rng=None, layers=None):
+    """x: (B, L, n_in) raw frames. Returns (probs, cache)."""
+    layers = layers or LAYERS
     h = (np.asarray(x, dtype=np.float64) - mean) / std
     caches = []
-    for i, (k, cout, pool) in enumerate(LAYERS, 1):
+    for i, (k, cout, pool) in enumerate(layers, 1):
         B, L, C = h.shape
         cols = _im2col(h, k)
         z = (cols @ p[f"W{i}"] + p[f"b{i}"]).reshape(B, L, cout)
@@ -124,7 +130,7 @@ def backward(p, cache, probs, y, n_out, smooth=0.05, class_w=None):
     dmax = np.zeros((B, L3, C3))
     np.put_along_axis(dmax, gmax_idx[:, None, :], dfeat[:, None, C3:], axis=1)
     dh = dh + dmax
-    for i in range(len(LAYERS), 0, -1):
+    for i in range(len(caches), 0, -1):
         cols, z, pc, (Bb, L, C, k) = caches[i - 1]
         if pc is not None:
             dh = _pool_bwd(dh, pc)
@@ -153,19 +159,34 @@ class Adam:
             p[k] -= self.lr * mh / (np.sqrt(vh) + 1e-8)
 
 
-def predict_proba(p, mean, std, x, batch=512):
+def predict_proba(p, mean, std, x, batch=512, layers=None):
     out = []
     for i in range(0, len(x), batch):
-        out.append(forward(p, mean, std, x[i:i + batch])[0])
+        out.append(forward(p, mean, std, x[i:i + batch], layers=layers)[0])
     return np.concatenate(out) if out else np.zeros((0, p["bd"].shape[0]))
 
 
 # ----------------------------------------------------------------------------- data helpers
 def windows(frames, stride=5, seq=SEQ_LEN):
-    """All full windows of one take, (n, seq, N_CH)."""
+    """All full windows of one take, (n, seq, channels)."""
     frames = np.asarray(frames)
     ends = range(seq, len(frames) + 1, stride)
-    return np.stack([frames[e - seq:e] for e in ends]) if len(frames) >= seq else np.zeros((0, seq, N_CH))
+    if len(frames) < seq:
+        return np.zeros((0, seq, frames.shape[1]))
+    return np.stack([frames[e - seq:e] for e in ends])
+
+
+def stretch_crop(frames, rng, seq, lo=0.8, hi=1.25):
+    """Random crop of a take, time-stretched to seq frames (linear interpolation)."""
+    n = len(frames)
+    src = max(4, min(int(round(seq * rng.uniform(lo, hi))), n))
+    start = rng.integers(0, n - src + 1)
+    seg = frames[start:start + src]
+    t = np.linspace(0, src - 1, seq)
+    i0 = np.floor(t).astype(int)
+    i1 = np.minimum(i0 + 1, src - 1)
+    a = (t - i0)[:, None]
+    return seg[i0] * (1 - a) + seg[i1] * a
 
 
 def _rot(rng, max_deg):
@@ -176,40 +197,40 @@ def _rot(rng, max_deg):
     return np.eye(3) + np.sin(a) * K + (1 - np.cos(a)) * K @ K
 
 
-def augment_window(frames, rng, seq=SEQ_LEN):
-    """Random window from a take with realistic glove variation. frames: (N, 15) one take.
+def augment_window(frames, rng, seq=SEQ_LEN, left_drop=0.1):
+    """Random window from a take with realistic glove variation. frames: (N, 15) or (N, 30) one take.
 
     - time stretch 0.8-1.25x        (people sign at different speeds)
     - flex gain/offset per finger   (calibration drift, sensor creep, glove fit)
-    - IMU tilt up to 12 deg         (MPU6050 mounted slightly differently)
+    - IMU tilt up to 12 deg         (MPU6050 mounted slightly differently), per glove
     - sensor noise, gyro gain, rare Hall flicker
+    - two gloves: with probability left_drop the left glove reads all zeros (radio link lost),
+      so the model still works one-handed when the link drops
     """
-    n = len(frames)
-    s = rng.uniform(0.8, 1.25)
-    src = int(round(seq * s))
-    src = max(8, min(src, n))
-    start = rng.integers(0, n - src + 1)
-    seg = frames[start:start + src]
-    t = np.linspace(0, src - 1, seq)
-    w = np.empty((seq, frames.shape[1]))
-    for c in range(frames.shape[1]):
-        w[:, c] = np.interp(t, np.arange(src), seg[:, c])
-    w[:, 5:9] = np.round(w[:, 5:9])                                      # Hall stays 0/1
-    w[:, 0:5] = np.clip(w[:, 0:5] * rng.uniform(0.85, 1.15, 5) + rng.normal(0, 0.05, 5)
-                        + rng.normal(0, 0.02, (seq, 5)), 0.0, 1.0)
-    flick = rng.random((seq, 4)) < 0.02
-    w[:, 5:9] = np.where(flick, 1 - w[:, 5:9], w[:, 5:9])
-    R = _rot(rng, 12)
-    w[:, 9:12] = w[:, 9:12] @ R.T + rng.normal(0, 0.02, (seq, 3))
-    w[:, 12:15] = (w[:, 12:15] @ R.T) * rng.uniform(0.8, 1.2) + rng.normal(0, 2.0, (seq, 3))
+    w = stretch_crop(frames, rng, seq)
+    for h in range(w.shape[1] // 15):
+        o = 15 * h
+        if h == 1 and rng.random() < left_drop:
+            w[:, o:o + 15] = 0.0
+            continue
+        w[:, o + 5:o + 9] = np.round(w[:, o + 5:o + 9])                  # Hall stays 0/1
+        w[:, o:o + 5] = np.clip(w[:, o:o + 5] * rng.uniform(0.85, 1.15, 5) + rng.normal(0, 0.05, 5)
+                                + rng.normal(0, 0.02, (seq, 5)), 0.0, 1.0)
+        flick = rng.random((seq, 4)) < 0.02
+        w[:, o + 5:o + 9] = np.where(flick, 1 - w[:, o + 5:o + 9], w[:, o + 5:o + 9])
+        R = _rot(rng, 12)
+        w[:, o + 9:o + 12] = w[:, o + 9:o + 12] @ R.T + rng.normal(0, 0.02, (seq, 3))
+        w[:, o + 12:o + 15] = (w[:, o + 12:o + 15] @ R.T) * rng.uniform(0.8, 1.2) + rng.normal(0, 2.0, (seq, 3))
     return w
 
 
 def drift(x, rng):
     """Stress test: what a session after re-wearing the glove looks like (no retraining)."""
     x = x.copy()
-    x[..., 0:5] = np.clip(x[..., 0:5] * rng.uniform(0.82, 0.92, 5) + rng.uniform(0.04, 0.10, 5), 0, 1)
-    R = _rot(rng, 10)
-    x[..., 9:12] = x[..., 9:12] @ R.T
-    x[..., 12:15] = x[..., 12:15] @ R.T
+    for h in range(x.shape[-1] // 15):
+        o = 15 * h
+        x[..., o:o + 5] = np.clip(x[..., o:o + 5] * rng.uniform(0.82, 0.92, 5) + rng.uniform(0.04, 0.10, 5), 0, 1)
+        R = _rot(rng, 10)
+        x[..., o + 9:o + 12] = x[..., o + 9:o + 12] @ R.T
+        x[..., o + 12:o + 15] = x[..., o + 12:o + 15] @ R.T
     return x

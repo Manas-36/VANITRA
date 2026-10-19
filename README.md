@@ -35,6 +35,15 @@ Every design decision, including how the inconsistencies in the earlier reports 
 
 ## Progress
 
+> **Update (19 Oct 2026): v3.0-dev — two gloves, ISL sentences, phone camera.**
+> - **ISL:** a [study of how ISL works](docs/isl_language.md) (two hands, grammar, facial grammar) and an ISL gloss vocabulary (58 signs).
+> - **Gloves:** a second glove linked over ESP-NOW (30-channel model).
+> - **Sentences:** a language engine turns signs into English sentences (`lang/`).
+> - **Phone camera:** streams to the laptop, which decodes the signs and sends text and speech back (`camera/`).
+> - **Training:** a [training guide](docs/training_guide.md).
+>
+> All models are placeholders trained on synthetic data. The code is tested on PC and has not yet run with real hardware, a real phone or real signers.
+>
 > **Update (18 Oct 2026): v2.0-dev.** After a [design review](docs/design_review_v2.md) the glove now has hardware v2 (4.5″ flex, 100 nF ADC filtering, LDO power, plug-in harness) and a **temporal CNN** gesture model with a PC live decoder. The CNN is a placeholder trained on synthetic data, like the MLP. The glove sketch passes the PC parity tests and a stub compile, but has **not been rebuilt with the ESP32 core or run on hardware since these changes**.
 >
 > **Status (16 Oct 2026): the v1.0 software is complete; the hardware has not been tested with it yet.** Both firmwares compile for the ESP32-S3 (Arduino core 3.2.0). The ML pipeline and the PC unit tests pass: Python and C++ give identical features and outputs. **The model in `model.h` is a placeholder trained on synthetic data.** It must be retrained on real glove recordings (see [docs/ml_pipeline.md](docs/ml_pipeline.md)). The accuracy figures in the 2025 reports came from the earlier prototype and still need to be re-measured with this firmware ([docs/testing.md](docs/testing.md)).
@@ -44,6 +53,7 @@ Every design decision, including how the inconsistencies in the earlier reports 
 | v0.1 | SCS mini project (AY 2025-26): concept, CAD, Wokwi simulation, breadboard glove, blue book, IEEE paper draft | ✅ |
 | v0.2 | Hackanova 5.0 (hardware track): deck + 36-hour build plan | ✅ |
 | **v1.0** | **This repo:** one consistent pin map, glove + wristband firmware, ML pipeline, voice clips, schematics, BOM, PC tests | ✅ software · 🔧 hardware next |
+| **v3.0-dev** | Two gloves (ESP-NOW), ISL vocabulary + grammar engine, phone-camera decoder, glove+camera fusion, training guide | ✅ software · 🔧 hardware/data next |
 | **v2.0-dev** | Design review: glove hardware v2 schematic, temporal CNN + live decoder, sensor-fault and low-battery warnings | ✅ software · 🔧 hardware next |
 | v1.1 | Bench bring-up with the test sketches, calibration, first real dataset (≥ 3 signers) | 📋 |
 | v1.2 | Wristband on hardware: phrase tuning, Morse legibility test | 📋 |
@@ -65,11 +75,17 @@ ml/
   vocabulary.csv       the 20 signs + REST and what the glove says for each
   collect_data.py      record labelled takes from the glove over USB
   train.py             v1 MLP: train + cross-validate + export firmware/glove_unit/model.h
-  vanitra_cnn.py       v2 temporal CNN in NumPy (mirror of firmware/glove_unit/cnn.h)
+  vanitra_cnn.py       temporal CNN in NumPy (gloves 15/30 ch, camera 148 ch; mirror of glove_unit/cnn.h)
   train_cnn.py         v2: train CNN, compare with MLP (clean + drifted), export model_cnn.h
   live_decoder.py      decode the glove live on a laptop (top-3, transcript, speech)
   make_voice_clips.py  build voice_clips.h (espeak-ng or your own recordings)
   make_synthetic_data.py   fake data to test the pipeline without hardware
+lang/
+  vanitra_lang/        ISL gloss stream -> English: lexicon, gloss LM + beam search, grammar rules
+  data/                isl_lexicon.csv, phrases.csv, isl_corpus.txt (gloss sentences + English)
+camera/
+  live.py              phone camera / webcam -> ISL -> English text back to the phone (+ glove fusion)
+  record.py, train_sign.py, extract_videos.py, eval_sentences.py, phone_bridge.py, features.py
 tools/
   make_sr_commands.py  phrases.csv -> ESP-SR phoneme table (commands.h)
 hardware/
@@ -114,7 +130,8 @@ Full steps: [docs/setup.md](docs/setup.md). No hardware? Run `python ml/make_syn
 | Glove v2 (ESP32-S3, 4 × 4.5″ + 1 × 2.2″ flex, 4 Hall, IMU, amp + speaker, OLED, LDO, connectors, glove) | ≈ ₹6,600 |
 | Wristband (ESP32-S3, INMP441, motor + driver, button, OLED, case, MT3608) | ≈ ₹1,600 |
 | Power ×2 (LiPo, TP4056, switch) + wiring | ≈ ₹1,100 |
-| **Total** | **≈ ₹9,300** |
+| Left glove (v3: same sensors, no speaker/amp/OLED, own battery) | ≈ ₹6,500 |
+| **Total** | **≈ ₹15,800** |
 
 These are approximate Indian prices for 2026. Flex sensors are most of the glove's cost: the 4.5″ upgrade adds about ₹1,980. Keeping 2.2″ sensors on every finger brings the total to about ₹7,350 (see the [design review](docs/design_review_v2.md)). Item by item: [hardware/bom.csv](hardware/bom.csv).
 

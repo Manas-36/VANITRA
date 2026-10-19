@@ -38,6 +38,14 @@ static const int HALL_PINS[4] = {9, 10, 1, 2};            // ADC1_CH8, CH9, CH0,
 #define VBAT_LOW_V        3.50f // v2 power runs the 3.3 V LDO straight from the cell: warn below this
                                 // (the LDO drops out and the sensor rail sags, which shifts calibration)
 
+// ---------------------------------------------------------------- two gloves (v3)
+// Flash THIS SAME firmware on both gloves. Set the role once over serial: 'r' toggles RIGHT <-> LEFT
+// (stored in flash). RIGHT = main glove: model, voice, USB stream. LEFT = sends its frames over ESP-NOW.
+#define TWO_GLOVES        1     // RIGHT glove streams 31 columns (right 15 + left 15 + left_ok)
+#define LINK_CHANNEL      1     // Wi-Fi channel 1-13; both gloves must match
+#define LINK_PAIR_ID      0x5631 // change it if two Vanitra pairs are used in the same room
+#define LINK_MAX_AGE_MS   120   // left frame older than this = link lost -> left hand = zeros
+
 // ---------------------------------------------------------------- gesture model
 #define GESTURE_MODEL_MLP 1     // v1: 0.5 s window, 16 hand-made features, MLP (model.h)
 #define GESTURE_MODEL_CNN 2     // v2: 1.0 s window, raw signal, temporal CNN (model_cnn.h)

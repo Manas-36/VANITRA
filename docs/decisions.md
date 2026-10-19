@@ -69,6 +69,40 @@ The v1 MLP sees 0.5 s reduced to 16 averages, so it cannot tell the order of a m
 ## D20 — A PC live decoder for demos and tuning
 `ml/live_decoder.py` runs the exported CNN with the firmware's exact speaking rules on the serial stream, or on a recorded CSV. It shows live top-3 guesses and a transcript, and can speak aloud. It lets you demo on a projector and tune `CONF_THRESHOLD` / `STABLE_COUNT` without reflashing.
 
+## v3 decisions (Oct 2026): two gloves, ISL grammar, phone camera, from [isl_language.md](isl_language.md)
+
+## D21 — Two gloves, one firmware, ESP-NOW
+ISL uses both hands, and most of its alphabet is two-handed, so a single glove caps the vocabulary. **Decision:** build a second, identical glove without the amp, speaker or OLED, and flash the **same sketch** on it. A serial command `r` stores its role (LEFT) in flash. The LEFT glove sends each calibrated frame (36-byte packet, 50 Hz, ESP-NOW broadcast filtered by `LINK_PAIR_ID`) to the RIGHT glove. The RIGHT glove runs the model on 30 channels. A frame older than 120 ms counts as "left missing" (zeros), and training randomly drops the left glove, so recognition degrades to one-handed instead of failing. No router or pairing is needed. Cost: the radio stays on, which roughly halves battery life (measure it). The left glove is about ₹6,500 extra.
+
+## D22 — One ISL gloss vocabulary for gloves and camera
+`ml/vocabulary.csv` now holds 58 ISL glosses + REST, chosen to cover everyday, health and emergency sentences, questions, negation and time. Gloves and camera share it, so their probabilities can be fused. Signs are copied from ISLRTC dictionary videos and are deliberately not described in text.
+
+## D23 — Sentences: a sign spotter, a gloss language model, then rules
+Continuous recognition is split into three explainable steps:
+1. A **spotter** accepts a sign when the same gloss stays on top (confidence + stability), and keeps its top-4 guesses.
+2. A **bigram gloss LM** (interpolated) with beam search picks the most plausible sequence. It may drop a shaky detection.
+3. **Rule-based ISL → English** handles time→tense, SOV→SVO, wh/NOT at the end, MUST/CAN, FINISH, articles, possessives and infinitives.
+
+Rules were chosen over a learned translator because there is no parallel data yet. Rules never invent meaning, and every output can be traced to its glosses. Swap in a learned model once thousands of signer-checked pairs exist (training_guide.md §7).
+
+## D24 — Non-manual grammar comes from the camera
+Yes/no questions (raised brows) and negation (head shake) are facial in ISL, and gloves cannot see the face. **Decision:** the camera measures them relative to the signer's own neutral face (median while not signing). With gloves only, the user signs the general `QUESTION` sign.
+
+## D25 — The phone camera runs through the browser, decoded on the laptop
+The phone page uses `getUserMedia` and needs HTTPS, so the laptop makes a self-signed certificate for its LAN IPs. It sends JPEG frames over a WebSocket with at most 2 in flight, which keeps latency low. The laptop sends back glosses and sentences, which the phone shows and speaks (speechSynthesis). No app is needed. Any OpenCV source (DroidCam, IP Webcam, files) also works. Only landmark features are stored, never images.
+
+## D26 — Camera features are in signing space
+MediaPipe Tasks (hands ×2, pose, face blendshapes + head pose) produce 148 features:
+- coordinates in a body frame (shoulder midpoint, shoulder width, an x axis from the right to the left shoulder, y down), which makes them invariant to position, distance and mirroring;
+- handshape in a wrist-centred frame scaled by hand size;
+- hands ordered dominant / non-dominant by matching the pose wrists;
+- resampling to 25 Hz, with drop-outs up to 150 ms bridged.
+
+The sign model is the same NumPy CNN family as the gloves (1.6 s window, 96/128/128 filters), so there is one code base to test.
+
+## D27 — Glove + camera fusion is a weighted product of probabilities
+`p ∝ p_cam^w · p_glove^(1−w)` on the shared vocabulary, with `w = 0.5` by default and tuned on a validation signer. The two sensors fail differently: gloves miss location and the face, the camera misses occluded fingers and struggles in bad light.
+
 ## Open questions
-- **ASL or ISL? (now the biggest open question, see the [design review](design_review_v2.md) #1)** The vocabulary uses one-handed ASL-style signs because the glove is on one hand. For Indian users, an **ISL** vocabulary is the obvious next step: change `ml/vocabulary.csv` and record new data. No code changes are needed.
+- ~~ASL or ISL?~~ **Decided in v3: ISL** (D22). Remaining question: which regional ISL variant your users sign. The vocabulary uses one-handed ASL-style signs because the glove is on one hand. For Indian users, an **ISL** vocabulary is the obvious next step: change `ml/vocabulary.csv` and record new data. No code changes are needed.
 - Should the glove and wristband talk to each other (ESP-NOW)? Useful for confirming spoken words on the wrist. Planned for v2.0.

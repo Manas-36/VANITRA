@@ -130,7 +130,7 @@ def export_test_vectors(takes, clf, mean, std, n=6, seed=1):
     for i in picks:
         frames = takes[i][3]
         start = int(rng.integers(0, len(frames) - WIN + 1))
-        win = frames[start:start + WIN]
+        win = frames[start:start + WIN, :15]          # the MLP uses the right glove only
         f = compute_features(win)
         p = predict_proba(clf, mean, std, f[None, :])[0]
         frames_all.append(win)

@@ -1,0 +1,91 @@
+# ISL gloss sentences with English, used to train the gloss language model and as translator tests.
+# Constructed by the team following the ISL rules in docs/isl_language.md (time first, predicate last,
+# wh-sign last, negation last, FINISH = completed). HAVE A DEAF ISL SIGNER CHECK AND EXTEND THIS FILE.
+# Format:  [YN] [NEG] GLOSS GLOSS ... | English      [YN] = raised brows (yes/no question), [NEG] = head shake
+#
+# --- greetings and social
+HELLO | Hello!
+HELLO YOU HOW | Hello! How are you?
+I FINE THANK-YOU | I am fine. Thank you.
+YOU NAME WHAT | What is your name?
+I NAME FS:MANAS | My name is Manas.
+THANK-YOU | Thank you.
+SORRY | Sorry.
+SORRY I LATE | Sorry. I am late.
+GOOD MORNING | Good morning!
+BYE | Bye!
+# --- needs
+I WATER WANT | I want water.
+I WATER NEED | I need water.
+I FOOD WANT | I want food.
+I HUNGRY | I am hungry.
+I THIRSTY | I am thirsty.
+I TIRED | I am tired.
+I WATER DRINK WANT | I want to drink water.
+I HOME GO WANT | I want to go home.
+I TOILET GO WANT | I want to go to the toilet.
+TOILET WHERE | Where is the toilet?
+WATER PLEASE | Water, please.
+I TEA LIKE | I like tea.
+I FOOD DONT-WANT | I don't want food.
+I MONEY HAVE NOT | I don't have money.
+# --- health and emergency
+I SICK | I am sick.
+I PAIN | I am in pain.
+I DOCTOR NEED | I need a doctor.
+I MEDICINE NEED | I need medicine.
+I HELP NEED | I need help.
+DOCTOR CALL | Call a doctor!
+POLICE CALL | Call the police!
+HOSPITAL WHERE | Where is the hospital?
+I HOSPITAL GO MUST | I must go to the hospital.
+I MOTHER SICK | My mother is sick.
+DOCTOR COME WHEN | When is the doctor coming?
+YESTERDAY I SICK | I was sick yesterday.
+I MEDICINE EAT FINISH | I have eaten the medicine.
+# --- questions
+YOU GO WHERE | Where are you going?
+YOU COME WHEN | When are you coming?
+YOU SAD WHY | Why are you sad?
+YOU WANT WHAT | What do you want?
+YOU WHO | Who are you?
+YOU HOME WHERE | Where is your home?
+YOU PHONE WHERE | Where is your phone?
+YOU BROTHER HOW-MANY | How many brothers do you have?
+YOU HUNGRY QUESTION | Are you hungry?
+[YN] YOU HUNGRY | Are you hungry?
+YOU WATER WANT QUESTION | Do you want water?
+YOU FOOD FINISH QUESTION | Have you finished the food?
+YOU EAT FINISH QUESTION | Have you eaten?
+YOU HELP CAN QUESTION | Can you help?
+YOU UNDERSTAND QUESTION | Do you understand?
+YOU TOMORROW COME QUESTION | Will you come tomorrow?
+YESTERDAY YOU SCHOOL GO QUESTION | Did you go to school yesterday?
+YOU BROTHER HAVE QUESTION | Do you have a brother?
+# --- negation
+I UNDERSTAND NOT | I don't understand.
+[NEG] I UNDERSTAND | I don't understand.
+I KNOW NOT | I don't know.
+TONIGHT I HOME COME NOT | I am not coming home tonight.
+TOMORROW I COLLEGE GO NOT | I won't go to college tomorrow.
+I COME CAN-NOT | I can't come.
+I SICK NOT | I am not sick.
+I SLEEP NEVER | I never sleep.
+# --- time and tense
+TODAY I COLLEGE GO | I am going to college today.
+TOMORROW I HOSPITAL GO | I will go to the hospital tomorrow.
+YESTERDAY I MARKET GO | I went to the market yesterday.
+NOW I WORK | I am working now.
+MORNING I TEA DRINK | I am drinking tea in the morning.
+I EAT FINISH | I have eaten.
+HE-SHE COME FINISH | He/she has come.
+# --- commands and requests
+WAIT PLEASE | Please wait.
+STOP | Stop.
+COME | Come.
+YOU SIT PLEASE | Please sit.
+GO NOT | Don't go.
+YOU TICKET MUST | You must have a ticket.
+I FRIEND CALL MUST | I must call my friend.
+I DOCTOR | I am a doctor.
+FS:RAHUL WHO | Who is Rahul?

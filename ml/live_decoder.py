@@ -6,9 +6,11 @@
 
 It puts the glove in stream mode ('s'), runs the SAME temporal CNN as the firmware
 (ml/models/vanitra_cnn.npz, written by train_cnn.py) on a sliding 1.0 s window every 100 ms, and applies
-the SAME speaking rules as the glove (confidence gate, stability, REST, repeat gap; firmware config.h).
-It prints the top-3 guesses as a live bar and builds a running transcript; a pause of --sentence-gap
-seconds ends a sentence.
+the SAME acceptance rules as the glove (confidence gate, stability, REST, repeat gap; firmware config.h).
+Two gloves: plug in the RIGHT glove; it streams both hands.
+Every accepted sign (with its top guesses) goes to the ISL language layer (lang/vanitra_lang): after a
+pause of --sentence-gap seconds the gloss sequence is decoded with the gloss language model and turned
+into an English sentence (ISL grammar: time first, verb last, wh-word / NOT at the end).
 
 Use it to: demo on a projector, debug which signs get confused, and tune CONF_THRESHOLD/STABLE_COUNT
 before flashing. Needs numpy (+ pyserial for --port, pyttsx3 for --speak).
@@ -25,6 +27,8 @@ import numpy as np
 import vanitra_cnn as vc
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "lang"))
+from vanitra_lang import BigramLM, Lexicon, SentenceBuilder, SignEvent, Translator  # noqa: E402
 
 
 class Model:
@@ -76,8 +80,8 @@ def frames_from_serial(port):
             line = ser.readline().decode(errors="ignore").strip()
             if line.startswith("D,"):
                 parts = line.split(",")[2:]          # drop "D" and t_ms
-                if len(parts) == vc.N_CH:
-                    yield np.array(parts, dtype=float), time.time()
+                if len(parts) in (15, 31):           # one glove / two gloves (+ left_ok)
+                    yield np.array(parts[:30], dtype=float), time.time()
     finally:
         ser.write(b"x")
         ser.close()
@@ -91,7 +95,7 @@ def frames_from_csv(path, realtime):
         t = i * 0.02
         if realtime:
             time.sleep(max(0.0, t0 + t - time.time()))
-        yield np.array(r[1:], dtype=float), t0 + t
+        yield np.array(r[1:31], dtype=float), t0 + t
 
 
 def bar(p, width=24):
@@ -127,41 +131,48 @@ def main():
             print("speech off:", e)
 
     gate = Gate(m.rest, args.conf, args.stable)
+    lex = Lexicon()
+    sb = SentenceBuilder(Translator(lex), BigramLM.default(lex.glosses()), gap=args.sentence_gap)
     win = deque(maxlen=vc.SEQ_LEN)
-    sentence, transcript, last_word_t, n = [], [], None, 0
+    n_in, transcript, n, t = len(m.mean), [], 0, 0.0
     stream = frames_from_serial(args.port) if args.port else frames_from_csv(args.replay, not args.fast)
+
+    def finish(sent):
+        transcript.append(sent.english)
+        print(f"\n>> {sent.english}     ({' '.join(sent.glosses)})")
+        if tts:
+            tts.say(sent.english)
+            tts.runAndWait()
+
     try:
         for frame, t in stream:
-            win.append(frame)
+            f = np.zeros(n_in)
+            f[:min(n_in, len(frame))] = frame[:n_in]
+            win.append(f)
             n += 1
-            if sentence and last_word_t and t - last_word_t > args.sentence_gap:
-                transcript.append(" ".join(sentence))
-                print(f"\n>> {transcript[-1]}")
-                sentence = []
             if len(win) < vc.SEQ_LEN or n % 5:
                 continue
             p = m.probs(np.array(win))
-            top = np.argsort(p)[::-1][:3]
+            top = np.argsort(p)[::-1][:4]
             said = gate.update(int(top[0]), float(p[top[0]]), t)
-            live = "  ".join(f"{m.labels[k]:>10s} {bar(p[k], 10)} {p[k]:4.0%}" for k in top)
+            live = "  ".join(f"{m.labels[k]:>10s} {bar(p[k], 10)} {p[k]:4.0%}" for k in top[:3])
             sys.stdout.write("\r" + live + "   ")
             sys.stdout.flush()
             if said is not None:
-                word = m.say[said]
-                sentence.append(word)
-                last_word_t = t
-                print(f"\n   SAY: {word}  ({p[said]:.0%})")
-                if tts:
-                    tts.say(word)
-                    tts.runAndWait()
+                sb.add(SignEvent(t, [(m.labels[k], float(p[k])) for k in top if k != m.rest]))
+                print(f"\n   sign: {m.labels[said]}  ({p[said]:.0%})   so far: {' '.join(sb.partial())}")
+            if int(top[0]) == m.rest:
+                sent = sb.poll(t)
+                if sent:
+                    finish(sent)
     except KeyboardInterrupt:
         pass
-    if sentence:
-        transcript.append(" ".join(sentence))
+    sent = sb.poll(t + 999, force=True)
+    if sent:
+        finish(sent)
     print("\n\nTranscript:")
     for s in transcript:
         print("  -", s)
-
 
 if __name__ == "__main__":
     main()

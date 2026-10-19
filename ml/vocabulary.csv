@@ -1,22 +1,60 @@
 label,say,sign_hint
-REST,,Hand relaxed / no sign. Never spoken. Record plenty of this class.
-HELLO,Hello,Open flat hand at the forehead moving outward (salute).
-THANK_YOU,Thank you,Flat hand from chin moving forward and down.
-YES,Yes,Fist (S hand) nodding up and down at the wrist.
-NO,No,Index and middle finger tap down onto the thumb.
-PLEASE,Please,Flat hand on chest moving in a circle.
-SORRY,Sorry,Fist (A hand) on chest moving in a circle.
-HELP,I need help,Fist (thumb up) resting on the flat other palm and lifted.
-WATER,Water please,W hand (three fingers up) tapping the chin.
-FOOD,I am hungry,Flat O hand (fingertips together) tapping the lips.
-TOILET,Where is the toilet,T hand (thumb between index and middle) shaken side to side.
-STOP,Stop,Flat hand chopping down vertically.
-GOOD,Good,Flat hand from chin moving down.
-BAD,Not good,Flat hand from chin turned over and down.
-NAME,What is your name,H hands (index + middle) tapping twice.
-I_LOVE_YOU,I love you,Thumb + index + little finger extended (ILY hand).
-WHAT,What,Both hands open palms up shaking slightly.
-WHERE,Where,Index finger up waving side to side.
-DOCTOR,Call a doctor,M hand (three fingers) tapping the inside of the other wrist.
-OK,Okay,Thumb and index tip touching (OK ring) other fingers up.
-WAIT,Please wait,Open hand palm up wiggling fingers.
+REST,,"Hands relaxed / no sign. Never spoken. Record plenty of this class (typing, holding things, scratching, walking)."
+I,I,ISL sign for 'I' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+YOU,you,ISL sign for 'you' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HE-SHE,he or she,ISL sign for 'he/she' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WE,we,ISL sign for 'we' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WHAT,what,ISL sign for 'what' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WHERE,where,ISL sign for 'where' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WHO,who,ISL sign for 'who' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WHEN,when,ISL sign for 'when' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WHY,why,ISL sign for 'why' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HOW,how,ISL sign for 'how' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+QUESTION,,ISL general question sign. On gloves it replaces the yes/no facial expression. Silent (beep).
+NOW,now,ISL sign for 'now' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+TODAY,today,ISL sign for 'today' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+TOMORROW,tomorrow,ISL sign for 'tomorrow' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+YESTERDAY,yesterday,ISL sign for 'yesterday' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+NOT,not,ISL sign for 'not' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+CAN-NOT,cannot,ISL sign for 'cannot' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+DONT-WANT,don't want,ISL sign for 'don't want' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WANT,want,ISL sign for 'want' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+NEED,need,ISL sign for 'need' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+LIKE,like,ISL sign for 'like' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+CAN,can,ISL sign for 'can' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+MUST,must,ISL sign for 'must' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HAVE,have,ISL sign for 'have' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+FINISH,finished,ISL sign for 'finish' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+GO,go,ISL sign for 'go' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+COME,come,ISL sign for 'come' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+EAT,eat,ISL sign for 'eat' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+DRINK,drink,ISL sign for 'drink' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HELP,help,ISL sign for 'help' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+CALL,call,ISL sign for 'call' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+UNDERSTAND,understand,ISL sign for 'understand' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WAIT,wait,ISL sign for 'wait' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+STOP,stop,ISL sign for 'stop' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+WATER,water,ISL sign for 'water' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+FOOD,food,ISL sign for 'food' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+MEDICINE,medicine,ISL sign for 'medicine' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+TOILET,toilet,ISL sign for 'toilet' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+DOCTOR,doctor,ISL sign for 'doctor' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HOSPITAL,hospital,ISL sign for 'hospital' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HOME,home,ISL sign for 'home' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+NAME,name,ISL sign for 'name' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+PHONE,phone,ISL sign for 'phone' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+MOTHER,mother,ISL sign for 'mother' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+FATHER,father,ISL sign for 'father' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+FRIEND,friend,ISL sign for 'friend' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+GOOD,good,ISL sign for 'good' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+BAD,bad,ISL sign for 'bad' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+SICK,sick,ISL sign for 'sick' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+PAIN,pain,ISL sign for 'in pain' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HUNGRY,hungry,ISL sign for 'hungry' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+TIRED,tired,ISL sign for 'tired' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HAPPY,happy,ISL sign for 'happy' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+HELLO,hello,ISL sign for 'hello' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+THANK-YOU,thank you,ISL sign for 'thank you' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+SORRY,sorry,ISL sign for 'sorry' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+PLEASE,please,ISL sign for 'please' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
+YES,yes,ISL sign for 'yes' - copy it from the ISLRTC dictionary video; note if it is one- or two-handed.
