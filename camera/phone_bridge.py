@@ -106,21 +106,28 @@ connect();
 
 
 def lan_ips():
+    """All IPv4 addresses of this laptop, the one used for the network/internet (Wi-Fi) FIRST.
+    Virtual adapters (VirtualBox 192.168.56.x, VMware, WSL, Docker) are listed after it."""
+    main = None
+    for probe in ("8.8.8.8", "10.255.255.255"):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((probe, 1))
+            main = s.getsockname()[0]
+            s.close()
+            break
+        except OSError:
+            pass
     ips = set()
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("10.255.255.255", 1))
-        ips.add(s.getsockname()[0])
-        s.close()
-    except OSError:
-        pass
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
             ips.add(info[4][0])
     except OSError:
         pass
     ips.discard("127.0.0.1")
-    return sorted(ips) or ["127.0.0.1"]
+    ips.discard(main)
+    out = ([main] if main and main != "127.0.0.1" else []) + sorted(ips)
+    return out or ["127.0.0.1"]
 
 
 def make_cert(ips):
@@ -205,8 +212,9 @@ class PhoneBridge:
         self.loop.run_until_complete(runner.setup())
         self.loop.run_until_complete(web.TCPSite(runner, self.host, self.port, ssl_context=ctx).start())
         print("\n  Phone camera: on the phone (same Wi-Fi / hotspot) open")
-        for ip in ips:
-            print(f"      https://{ip}:{self.port}")
+        print(f"      https://{ips[0]}:{self.port}      <-- use this one (your Wi-Fi address)")
+        for ip in ips[1:]:
+            print(f"      https://{ip}:{self.port}      (other adapter: VirtualBox / VPN / hotspot - usually not reachable)")
         print("  The browser warns about the certificate once: tap Advanced -> Proceed. Allow the camera.\n")
         self.urls = [f"https://{ip}:{self.port}" for ip in ips]
         self.ready.set()
